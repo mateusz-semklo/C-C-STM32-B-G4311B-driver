@@ -60,21 +60,14 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if(GPIO_Pin==GPIO_PIN_10)
 	{
-				 HAL_TIMEx_HallSensor_Start(&htim4);
 
-				 HAL_TIMEx_PWMN_Start_IT(&htim1, TIM_CHANNEL_1);
-				 HAL_TIMEx_PWMN_Start_IT(&htim1, TIM_CHANNEL_2);
-				 HAL_TIMEx_PWMN_Start_IT(&htim1, TIM_CHANNEL_3);
-
-				 HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_1);
-				 HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_2);
 
 				 TIM4->CNT=0;
 				 TIM4->CCR1=0;
 
 
 				 start_stop=1;
-				 licznik=0;
+				 licznik++;
 
 	}
 }
@@ -142,7 +135,7 @@ void HAL_TIMEx_CommutCallback(TIM_HandleTypeDef *htim)
 				    					RESET_CC3N_T6;
 				    break;
 					}
-					licznik++;
+
 					if(licznik>5)
 					licznik=0;
 				}
@@ -216,10 +209,16 @@ int main(void)
     TIM2->ARR=0xFFFF;
     TIM2->PSC=0;
 
+    HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_1);
+   	HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_2);
+
+
   //////// konfiguracja Timer 4  ////////////
     TIM4->ARR=0xFFFF;
     TIM4->PSC=500;
     TIM4->CCR2=2;
+
+    HAL_TIMEx_HallSensor_Start(&htim4);
 
     //////// konfiguracja Timer 1  ////////////
     TIM1->ARR=0;
@@ -228,6 +227,10 @@ int main(void)
     TIM1->CCR2=0;
     TIM1->CCR3=0;
     HAL_TIMEx_ConfigCommutEvent_IT(&htim1,TIM_TS_ITR3, TIM_COMMUTATION_TRGI);
+
+    HAL_TIMEx_PWMN_Start_IT(&htim1, TIM_CHANNEL_1);
+   	HAL_TIMEx_PWMN_Start_IT(&htim1, TIM_CHANNEL_2);
+   	HAL_TIMEx_PWMN_Start_IT(&htim1, TIM_CHANNEL_3);
 
 
 
