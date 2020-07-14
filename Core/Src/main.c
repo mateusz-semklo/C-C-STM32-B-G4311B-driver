@@ -207,7 +207,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   //////// konfiguracja Timer 2  ////////////
     TIM2->ARR=0xFFFF;
-    TIM2->PSC=0;
+    TIM2->PSC=100;
 
     HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_1);
    	HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_2);

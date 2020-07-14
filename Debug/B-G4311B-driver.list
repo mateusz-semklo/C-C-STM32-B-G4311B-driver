@@ -888,9 +888,9 @@ int main(void)
  800088c:	f04f 4380 	mov.w	r3, #1073741824	; 0x40000000
  8000890:	f64f 72ff 	movw	r2, #65535	; 0xffff
  8000894:	62da      	str	r2, [r3, #44]	; 0x2c
-    TIM2->PSC=0;
+    TIM2->PSC=100;
  8000896:	f04f 4380 	mov.w	r3, #1073741824	; 0x40000000
- 800089a:	2200      	movs	r2, #0
+ 800089a:	2264      	movs	r2, #100	; 0x64
  800089c:	629a      	str	r2, [r3, #40]	; 0x28
 
     HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_1);
