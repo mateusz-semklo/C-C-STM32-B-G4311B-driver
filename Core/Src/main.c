@@ -47,7 +47,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-volatile uint8_t start_stop,licznik;
+volatile uint8_t start_stop;
+volatile licznik=-1;
 uint16_t i,j;
 
 /* USER CODE END PV */
@@ -64,7 +65,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 				 TIM4->CNT=0;
 				 TIM4->CCR1=0;
-
 
 				 start_stop=1;
 				 licznik++;
@@ -137,11 +137,11 @@ void HAL_TIMEx_CommutCallback(TIM_HandleTypeDef *htim)
 					}
 
 					if(licznik>5)
-					licznik=0;
+					licznik=-1;
 				}
 	else
 	{
-		licznik=0;
+		licznik=-1;
 	}
 	}
 }
@@ -207,7 +207,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   //////// konfiguracja Timer 2  ////////////
     TIM2->ARR=0xFFFF;
-    TIM2->PSC=100;
+    TIM2->PSC=500;
 
     HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_1);
    	HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_2);
