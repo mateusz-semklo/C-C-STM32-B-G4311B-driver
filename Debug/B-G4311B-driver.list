@@ -535,14 +535,14 @@ void HAL_TIMEx_CommutCallback(TIM_HandleTypeDef *htim)
  800063a:	f200 80ed 	bhi.w	8000818 <HAL_TIMEx_CommutCallback+0x204>
  800063e:	a201      	add	r2, pc, #4	; (adr r2, 8000644 <HAL_TIMEx_CommutCallback+0x30>)
  8000640:	f852 f023 	ldr.w	pc, [r2, r3, lsl #2]
- 8000644:	0800065d 	.word	0x0800065d
- 8000648:	080006a7 	.word	0x080006a7
- 800064c:	080006f1 	.word	0x080006f1
- 8000650:	0800073b 	.word	0x0800073b
- 8000654:	08000785 	.word	0x08000785
- 8000658:	080007cf 	.word	0x080007cf
+ 8000644:	080007cf 	.word	0x080007cf
+ 8000648:	0800065d 	.word	0x0800065d
+ 800064c:	080006a7 	.word	0x080006a7
+ 8000650:	080006f1 	.word	0x080006f1
+ 8000654:	0800073b 	.word	0x0800073b
+ 8000658:	08000785 	.word	0x08000785
 					{
-					case 0:
+					case 1:
 										SET_CC1_T1;
  800065c:	4b78      	ldr	r3, [pc, #480]	; (8000840 <HAL_TIMEx_CommutCallback+0x22c>)
  800065e:	6a1b      	ldr	r3, [r3, #32]
@@ -582,7 +582,7 @@ void HAL_TIMEx_CommutCallback(TIM_HandleTypeDef *htim)
 				    break;
  80006a4:	e0b8      	b.n	8000818 <HAL_TIMEx_CommutCallback+0x204>
 
-					case 1:
+					case 2:
 										SET_CC1_T1;
  80006a6:	4b66      	ldr	r3, [pc, #408]	; (8000840 <HAL_TIMEx_CommutCallback+0x22c>)
  80006a8:	6a1b      	ldr	r3, [r3, #32]
@@ -622,7 +622,7 @@ void HAL_TIMEx_CommutCallback(TIM_HandleTypeDef *htim)
 				    break;
  80006ee:	e093      	b.n	8000818 <HAL_TIMEx_CommutCallback+0x204>
 
-					case 2:
+					case 3:
 										RESET_CC1_T1;
  80006f0:	4b53      	ldr	r3, [pc, #332]	; (8000840 <HAL_TIMEx_CommutCallback+0x22c>)
  80006f2:	6a1b      	ldr	r3, [r3, #32]
@@ -662,7 +662,7 @@ void HAL_TIMEx_CommutCallback(TIM_HandleTypeDef *htim)
 				    break;
  8000738:	e06e      	b.n	8000818 <HAL_TIMEx_CommutCallback+0x204>
 
-				    case 3:
+				    case 4:
 				    					RESET_CC1_T1;
  800073a:	4b41      	ldr	r3, [pc, #260]	; (8000840 <HAL_TIMEx_CommutCallback+0x22c>)
  800073c:	6a1b      	ldr	r3, [r3, #32]
@@ -702,7 +702,7 @@ void HAL_TIMEx_CommutCallback(TIM_HandleTypeDef *htim)
 					break;
  8000782:	e049      	b.n	8000818 <HAL_TIMEx_CommutCallback+0x204>
 
-				    case 4:
+				    case 5:
 				    					RESET_CC1_T1;
  8000784:	4b2e      	ldr	r3, [pc, #184]	; (8000840 <HAL_TIMEx_CommutCallback+0x22c>)
  8000786:	6a1b      	ldr	r3, [r3, #32]
@@ -742,7 +742,7 @@ void HAL_TIMEx_CommutCallback(TIM_HandleTypeDef *htim)
 				    break;
  80007cc:	e024      	b.n	8000818 <HAL_TIMEx_CommutCallback+0x204>
 
-				    case 5:
+				    case 0:
 				    					RESET_CC1_T1;
  80007ce:	4b1c      	ldr	r3, [pc, #112]	; (8000840 <HAL_TIMEx_CommutCallback+0x22c>)
  80007d0:	6a1b      	ldr	r3, [r3, #32]

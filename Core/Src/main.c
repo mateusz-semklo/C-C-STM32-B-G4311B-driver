@@ -81,7 +81,7 @@ void HAL_TIMEx_CommutCallback(TIM_HandleTypeDef *htim)
 	{
 					switch (licznik)
 					{
-					case 0:
+					case 1:
 										SET_CC1_T1;
 										RESET_CC1N_T2;
 										RESET_CC2_T3;
@@ -90,7 +90,7 @@ void HAL_TIMEx_CommutCallback(TIM_HandleTypeDef *htim)
 										RESET_CC3N_T6;
 				    break;
 
-					case 1:
+					case 2:
 										SET_CC1_T1;
 										RESET_CC1N_T2;
 										RESET_CC2_T3;
@@ -99,7 +99,7 @@ void HAL_TIMEx_CommutCallback(TIM_HandleTypeDef *htim)
 										SET_CC3N_T6;
 				    break;
 
-					case 2:
+					case 3:
 										RESET_CC1_T1;
 										RESET_CC1N_T2;
 										SET_CC2_T3;
@@ -108,7 +108,7 @@ void HAL_TIMEx_CommutCallback(TIM_HandleTypeDef *htim)
 										SET_CC3N_T6;
 				    break;
 
-				    case 3:
+				    case 4:
 				    					RESET_CC1_T1;
 				    					SET_CC1N_T2;
 				    					SET_CC2_T3;
@@ -117,7 +117,7 @@ void HAL_TIMEx_CommutCallback(TIM_HandleTypeDef *htim)
 				    					RESET_CC3N_T6;
 					break;
 
-				    case 4:
+				    case 5:
 				    					RESET_CC1_T1;
 				    					SET_CC1N_T2;
 				    					RESET_CC2_T3;
@@ -126,7 +126,7 @@ void HAL_TIMEx_CommutCallback(TIM_HandleTypeDef *htim)
 				    					RESET_CC3N_T6;
 				    break;
 
-				    case 5:
+				    case 0:
 				    					RESET_CC1_T1;
 				    					RESET_CC1N_T2;
 				    					RESET_CC2_T3;
