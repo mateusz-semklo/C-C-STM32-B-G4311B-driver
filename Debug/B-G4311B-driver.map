@@ -3188,11 +3188,12 @@ LOAD c:/st/stm32cubeide_1.3.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.exte
  .text.main     0x00000000080008a8       0xa8 Core/Src/main.o
                 0x00000000080008a8                main
  .text.SystemClock_Config
-                0x0000000008000950       0xc6 Core/Src/main.o
+                0x0000000008000950       0xc4 Core/Src/main.o
                 0x0000000008000950                SystemClock_Config
  .text.Error_Handler
-                0x0000000008000a16        0xe Core/Src/main.o
-                0x0000000008000a16                Error_Handler
+                0x0000000008000a14        0xe Core/Src/main.o
+                0x0000000008000a14                Error_Handler
+ *fill*         0x0000000008000a22        0x2 
  .text.LL_PWR_DisableUCPDDeadBattery
                 0x0000000008000a24       0x20 Core/Src/stm32g4xx_hal_msp.o
  .text.HAL_MspInit
