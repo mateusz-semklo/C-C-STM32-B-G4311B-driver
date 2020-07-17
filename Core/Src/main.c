@@ -61,7 +61,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if(GPIO_Pin==GPIO_PIN_10)
 	{
-				 HAL_TIMEx_HallSensor_Start(&htim4);
 
 				 HAL_TIMEx_PWMN_Start_IT(&htim1, TIM_CHANNEL_1);
 				 HAL_TIMEx_PWMN_Start_IT(&htim1, TIM_CHANNEL_2);
@@ -70,12 +69,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 				 HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_1);
 				 HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_2);
 
-				 TIM4->CNT=0;
-				 TIM4->CCR1=0;
-
-
 				 start_stop=1;
-				 licznik=0;
 
 	}
 }
@@ -85,13 +79,6 @@ void HAL_TIMEx_CommutCallback(TIM_HandleTypeDef *htim)
 	if(htim->Instance==TIM1)
 	{
 
-	if (start_stop==1)
-	{
-
-
-
-
-	}
 
 
 	}
@@ -99,7 +86,7 @@ void HAL_TIMEx_CommutCallback(TIM_HandleTypeDef *htim)
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
-	//i++;
+
 	if(htim->Instance==TIM2)
 	{
 
