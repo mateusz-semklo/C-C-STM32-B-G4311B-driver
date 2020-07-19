@@ -47,8 +47,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-volatile uint8_t start_stop;
-volatile licznik=-1;
+volatile uint8_t start_stop=1;
+volatile licznik=0;
 uint16_t i,j;
 
 /* USER CODE END PV */
@@ -63,11 +63,73 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	{
 
 
-				 TIM4->CNT=0;
-				 TIM4->CCR1=0;
 
-				 start_stop=1;
-				 licznik++;
+							switch (licznik)
+							{
+							case 1:
+												SET_CC1_T1;
+												RESET_CC1N_T2;
+												RESET_CC2_T3;
+												SET_CC2N_T4;
+												RESET_CC3_T5;
+												RESET_CC3N_T6;
+						    break;
+
+							case 2:
+												SET_CC1_T1;
+												RESET_CC1N_T2;
+												RESET_CC2_T3;
+												RESET_CC2N_T4;
+												RESET_CC3_T5;
+												SET_CC3N_T6;
+						    break;
+
+							case 3:
+												RESET_CC1_T1;
+												RESET_CC1N_T2;
+												SET_CC2_T3;
+												RESET_CC2N_T4;
+												RESET_CC3_T5;
+												SET_CC3N_T6;
+						    break;
+
+						    case 4:
+						    					RESET_CC1_T1;
+						    					SET_CC1N_T2;
+						    					SET_CC2_T3;
+						    					RESET_CC2N_T4;
+						    					RESET_CC3_T5;
+						    					RESET_CC3N_T6;
+							break;
+
+						    case 5:
+						    					RESET_CC1_T1;
+						    					SET_CC1N_T2;
+						    					RESET_CC2_T3;
+						    					RESET_CC2N_T4;
+						    					SET_CC3_T5;
+						    					RESET_CC3N_T6;
+						    break;
+
+						    case 0:
+						    					RESET_CC1_T1;
+						    					RESET_CC1N_T2;
+						    					RESET_CC2_T3;
+						    					SET_CC2N_T4;
+						    					SET_CC3_T5;
+						    					RESET_CC3N_T6;
+						    break;
+							}
+
+							licznik++;
+
+							if(licznik>5)
+							licznik=0;
+
+
+
+
+
 
 	}
 }
@@ -77,72 +139,7 @@ void HAL_TIMEx_CommutCallback(TIM_HandleTypeDef *htim)
 	if(htim->Instance==TIM1)
 	{
 
-	if (start_stop==1)
-	{
-					switch (licznik)
-					{
-					case 1:
-										SET_CC1_T1;
-										RESET_CC1N_T2;
-										RESET_CC2_T3;
-										SET_CC2N_T4;
-										RESET_CC3_T5;
-										RESET_CC3N_T6;
-				    break;
 
-					case 2:
-										SET_CC1_T1;
-										RESET_CC1N_T2;
-										RESET_CC2_T3;
-										RESET_CC2N_T4;
-										RESET_CC3_T5;
-										SET_CC3N_T6;
-				    break;
-
-					case 3:
-										RESET_CC1_T1;
-										RESET_CC1N_T2;
-										SET_CC2_T3;
-										RESET_CC2N_T4;
-										RESET_CC3_T5;
-										SET_CC3N_T6;
-				    break;
-
-				    case 4:
-				    					RESET_CC1_T1;
-				    					SET_CC1N_T2;
-				    					SET_CC2_T3;
-				    					RESET_CC2N_T4;
-				    					RESET_CC3_T5;
-				    					RESET_CC3N_T6;
-					break;
-
-				    case 5:
-				    					RESET_CC1_T1;
-				    					SET_CC1N_T2;
-				    					RESET_CC2_T3;
-				    					RESET_CC2N_T4;
-				    					SET_CC3_T5;
-				    					RESET_CC3N_T6;
-				    break;
-
-				    case 0:
-				    					RESET_CC1_T1;
-				    					RESET_CC1N_T2;
-				    					RESET_CC2_T3;
-				    					SET_CC2N_T4;
-				    					SET_CC3_T5;
-				    					RESET_CC3N_T6;
-				    break;
-					}
-
-					if(licznik>5)
-					licznik=-1;
-				}
-	else
-	{
-		licznik=-1;
-	}
 	}
 }
 
@@ -218,19 +215,21 @@ int main(void)
     TIM4->PSC=500;
     TIM4->CCR2=2;
 
-    HAL_TIMEx_HallSensor_Start(&htim4);
+   // HAL_TIMEx_HallSensor_Start(&htim4);
 
     //////// konfiguracja Timer 1  ////////////
-    TIM1->ARR=0;
-    TIM1->PSC=0;
-    TIM1->CCR1=0;
-    TIM1->CCR2=0;
-    TIM1->CCR3=0;
-    HAL_TIMEx_ConfigCommutEvent_IT(&htim1,TIM_TS_ITR3, TIM_COMMUTATION_TRGI);
+    TIM1->ARR=0xFFFF;
+    TIM1->PSC=100;
+    TIM1->CCR1=64000;
+    TIM1->CCR2=64000;
+    TIM1->CCR3=64000;
+  //  HAL_TIMEx_ConfigCommutEvent_IT(&htim1,TIM_TS_ITR3, TIM_COMMUTATION_TRGI);
 
-    HAL_TIMEx_PWMN_Start_IT(&htim1, TIM_CHANNEL_1);
-   	HAL_TIMEx_PWMN_Start_IT(&htim1, TIM_CHANNEL_2);
-   	HAL_TIMEx_PWMN_Start_IT(&htim1, TIM_CHANNEL_3);
+
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+   	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+   	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+
 
 
 
@@ -242,10 +241,10 @@ int main(void)
   while (1)
   {
 
-	  TIM1->ARR=TIM2->CCR1;
-	  TIM1->CCR1=TIM2->CCR2;
-	  TIM1->CCR2=TIM2->CCR2;
-	  TIM1->CCR3=TIM2->CCR2;
+	//  TIM1->ARR=TIM2->CCR1;
+	//  TIM1->CCR1=TIM2->CCR2;
+	//  TIM1->CCR2=TIM2->CCR2;
+	//  TIM1->CCR3=TIM2->CCR2;
 
 
     /* USER CODE END WHILE */
