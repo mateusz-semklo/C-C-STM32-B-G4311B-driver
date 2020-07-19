@@ -144,17 +144,13 @@ int main(void)
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   //////// konfiguracja Timer 2  ////////////
-    TIM2->ARR=0xFFFF;
-    TIM2->PSC=500;
+    TIM2->ARR=0xFFFE;
+    TIM2->PSC=100;
 
-  //////// konfiguracja Timer 4  ////////////
-    TIM4->ARR=0xFFFF;
-    TIM4->PSC=500;
-    TIM4->CCR2=2;
 
     //////// konfiguracja Timer 1  ////////////
     TIM1->ARR=0;
-    TIM1->PSC=0;
+    TIM1->PSC=100;
     TIM1->CCR1=0;
     TIM1->CCR2=0;
     TIM1->CCR3=0;
