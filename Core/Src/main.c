@@ -145,12 +145,12 @@ int main(void)
   /* USER CODE BEGIN 2 */
   //////// konfiguracja Timer 2  ////////////
     TIM2->ARR=0xFFFE;
-    TIM2->PSC=100;
+    TIM2->PSC=0;
 
 
     //////// konfiguracja Timer 1  ////////////
     TIM1->ARR=0;
-    TIM1->PSC=100;
+    TIM1->PSC=0;
     TIM1->CCR1=0;
     TIM1->CCR2=0;
     TIM1->CCR3=0;
