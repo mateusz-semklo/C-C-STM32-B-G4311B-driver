@@ -71,29 +71,87 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 							case 1:
 								 TIM1->CCR1=34000;
 								 TIM1->CCR2=0;
+								 TIM1->CCR3=0;
+
+								 SET_CC1_T1;
+								 SET_CC1N_T2;
+								 SET_CC2_T3;
+								 SET_CC2N_T4;
+								 RESET_CC3_T5;
+								 RESET_CC3N_T6;
 
 						    break;
 
 							case 2:
-								 TIM1->CCR2=34000;
-								 TIM1->CCR1=0;
+								 TIM1->CCR1=34000;
+								 TIM1->CCR2=0;
+								 TIM1->CCR3=0;
+
+								 SET_CC1_T1;
+								 SET_CC1N_T2;
+								 RESET_CC2_T3;
+								 RESET_CC2N_T4;
+								 SET_CC3_T5;
+								 SET_CC3N_T6;
 
 						    break;
 
 							case 3:
+
+								TIM1->CCR1=0;
+								TIM1->CCR2=34000;
+								TIM1->CCR3=0;
+
+								RESET_CC1_T1;
+								RESET_CC1N_T2;
+								SET_CC2_T3;
+								SET_CC2N_T4;
+								SET_CC3_T5;
+								SET_CC3N_T6;
 
 
 						    break;
 
 						    case 4:
 
+						    	TIM1->CCR1=0;
+						    	TIM1->CCR2=34000;
+						    	TIM1->CCR3=0;
+
+						    	SET_CC1_T1;
+						    	SET_CC1N_T2;
+						    	SET_CC2_T3;
+						    	SET_CC2N_T4;
+						    	RESET_CC3_T5;
+						    	RESET_CC3N_T6;
+
 							break;
 
 						    case 5:
+						    	TIM1->CCR1=0;
+						    	TIM1->CCR2=0;;
+						    	TIM1->CCR3=34000;
+
+						    	SET_CC1_T1;
+						    	SET_CC1N_T2;
+						    	RESET_CC2_T3;
+						    	RESET_CC2N_T4;
+						    	SET_CC3_T5;
+						    	SET_CC3N_T6;
 
 						    break;
 
 						    case 0:
+						    	TIM1->CCR1=0;
+						    	TIM1->CCR2=0;
+						    	TIM1->CCR3=34000;
+
+						    	RESET_CC1_T1;
+						    	RESET_CC1N_T2;
+						    	SET_CC2_T3;
+						    	SET_CC2N_T4;
+						    	SET_CC3_T5;
+						    	SET_CC3N_T6;
 
 						    break;
 							}
@@ -196,7 +254,7 @@ int main(void)
 
     //////// konfiguracja Timer 1  ////////////
     TIM1->ARR=0xFFFF;
-    TIM1->PSC=9500;
+    TIM1->PSC=100;
     TIM1->CCR1=0;
     TIM1->CCR2=0;
     TIM1->CCR3=0;
