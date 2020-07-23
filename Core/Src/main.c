@@ -49,7 +49,7 @@
 /* USER CODE BEGIN PV */
 volatile uint8_t start_stop,licznik;
 uint16_t i,j;
-uint8_t a,b,c;
+uint8_t a,b,c,d;
 
 /* USER CODE END PV */
 
@@ -61,6 +61,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if(GPIO_Pin==GPIO_PIN_10)
 	{
+		if(d==0)
+		{
 
 				 HAL_TIMEx_PWMN_Start_IT(&htim1, TIM_CHANNEL_1);
 				 HAL_TIMEx_PWMN_Start_IT(&htim1, TIM_CHANNEL_2);
@@ -70,6 +72,13 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 				 HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_2);
 
 				 start_stop=1;
+				 d=1;
+		}
+		else
+		{
+
+		}
+
 
 	}
 }
