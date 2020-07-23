@@ -69,7 +69,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 							switch (licznik)
 							{
 							case 1:
-								 TIM1->CCR1=34000;
+								 TIM1->CCR1=0xFFFE;
 								 TIM1->CCR2=0;
 								 TIM1->CCR3=0;
 
@@ -83,7 +83,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 						    break;
 
 							case 2:
-								 TIM1->CCR1=34000;
+								 TIM1->CCR1=0xFFFE;
 								 TIM1->CCR2=0;
 								 TIM1->CCR3=0;
 
@@ -99,7 +99,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 							case 3:
 
 								TIM1->CCR1=0;
-								TIM1->CCR2=34000;
+								TIM1->CCR2=0xFFFE;
 								TIM1->CCR3=0;
 
 								RESET_CC1_T1;
@@ -115,7 +115,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 						    case 4:
 
 						    	TIM1->CCR1=0;
-						    	TIM1->CCR2=34000;
+						    	TIM1->CCR2=0xFFFE;
 						    	TIM1->CCR3=0;
 
 						    	SET_CC1_T1;
@@ -130,7 +130,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 						    case 5:
 						    	TIM1->CCR1=0;
 						    	TIM1->CCR2=0;;
-						    	TIM1->CCR3=34000;
+						    	TIM1->CCR3=0xFFFE;
 
 						    	SET_CC1_T1;
 						    	SET_CC1N_T2;
@@ -144,7 +144,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 						    case 0:
 						    	TIM1->CCR1=0;
 						    	TIM1->CCR2=0;
-						    	TIM1->CCR3=34000;
+						    	TIM1->CCR3=0xFFFE;
 
 						    	RESET_CC1_T1;
 						    	RESET_CC1N_T2;
@@ -237,29 +237,15 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-  //////// konfiguracja Timer 2  ////////////
-    TIM2->ARR=0xFFFE;
-    TIM2->PSC=0;
 
-  //  HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_1);
-  // 	HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_2);
-
-
-  //////// konfiguracja Timer 4  ////////////
-    TIM4->ARR=0xFFFE;
-    TIM4->PSC=499;
-    TIM4->CCR2=1;
-
-   // HAL_TIMEx_HallSensor_Start(&htim4);
 
     //////// konfiguracja Timer 1  ////////////
-    TIM1->ARR=0xFFFF;
+    TIM1->ARR=0xFFFE;
     TIM1->PSC=100;
     TIM1->CCR1=0;
     TIM1->CCR2=0;
     TIM1->CCR3=0;
-   // TIM1->CCR3=34000;
-  //  HAL_TIMEx_ConfigCommutEvent_IT(&htim1,TIM_TS_ITR3, TIM_COMMUTATION_TRGI);
+
 
 
 
@@ -271,9 +257,6 @@ int main(void)
 
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
     HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
-
-
-
 
 
 
