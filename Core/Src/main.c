@@ -64,9 +64,14 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		if(d==0)
 		{
 
-				 HAL_TIMEx_PWMN_Start_IT(&htim1, TIM_CHANNEL_1);
-				 HAL_TIMEx_PWMN_Start_IT(&htim1, TIM_CHANNEL_2);
-				 HAL_TIMEx_PWMN_Start_IT(&htim1, TIM_CHANNEL_3);
+				HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+			    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
+
+			    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+			    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
+
+			    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+			    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
 
 				 HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_1);
 				 HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_2);
@@ -76,6 +81,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		}
 		else
 		{
+			start_stop=0;
+			d=0;
 
 		}
 
@@ -158,7 +165,7 @@ int main(void)
 
 
     //////// konfiguracja Timer 1  ////////////
-    TIM1->ARR=0;
+    TIM1->ARR=0xFFFE;
     TIM1->PSC=0;
     TIM1->CCR1=0;
     TIM1->CCR2=0;
@@ -189,91 +196,106 @@ int main(void)
 	 	  else
 	 		  c=0;
 
-	 	  	  if(start_stop==1)
-	 	  	  {
+
+	 	if(start_stop==1)
+	 	{
 	 											if( a==1 && b==0 && c==0)
 	 											{
-	 											SET_CC1_T1;
-	 											RESET_CC1N_T2;
-	 											RESET_CC2_T3;
-	 											SET_CC2N_T4;
-	 											RESET_CC3_T5;
-	 											RESET_CC3N_T6;
+	 												TIM1->CCR1=TIM2->CCR2;
+	 												TIM1->CCR2=0;
+	 												TIM1->CCR3=0;
+
+	 												SET_CC1_T1;
+	 												SET_CC1N_T2;
+	 												SET_CC2_T3;
+	 												SET_CC2N_T4;
+	 												RESET_CC3_T5;
+	 												RESET_CC3N_T6;
 	 											}
 
 	 											if( a==1 && b==1 && c==0)
 	 											{
-	 											SET_CC1_T1;
-	 											RESET_CC1N_T2;
-	 											RESET_CC2_T3;
-	 											RESET_CC2N_T4;
-	 											RESET_CC3_T5;
-	 											SET_CC3N_T6;
+	 												TIM1->CCR1=TIM2->CCR2;
+	 												TIM1->CCR2=0;
+	 												TIM1->CCR3=0;
+
+	 												SET_CC1_T1;
+	 												SET_CC1N_T2;
+	 												RESET_CC2_T3;
+	 												RESET_CC2N_T4;
+	 												SET_CC3_T5;
+	 												SET_CC3N_T6;
 	 											}
 
 
 	 											if( a==0 && b==1 && c==0)
 	 											{
-	 											RESET_CC1_T1;
-	 											RESET_CC1N_T2;
-	 											SET_CC2_T3;
-	 											RESET_CC2N_T4;
-	 											RESET_CC3_T5;
-	 											SET_CC3N_T6;
+	 												TIM1->CCR1=0;
+	 												TIM1->CCR2=TIM2->CCR2;
+	 												TIM1->CCR3=0;
+
+	 												RESET_CC1_T1;
+	 												RESET_CC1N_T2;
+	 												SET_CC2_T3;
+	 												SET_CC2N_T4;
+	 												SET_CC3_T5;
+	 												SET_CC3N_T6;
 	 											}
 
 
 	 											if( a==0 && b==1 && c==1)
 	 											{
-	 					    					RESET_CC1_T1;
-	 					    					SET_CC1N_T2;
-	 					    					SET_CC2_T3;
-	 					    					RESET_CC2N_T4;
-	 					    					RESET_CC3_T5;
-	 					    					RESET_CC3N_T6;
+	 												TIM1->CCR1=0;
+	 												TIM1->CCR2=TIM2->CCR2;
+	 												TIM1->CCR3=0;
+
+	 												SET_CC1_T1;
+	 												SET_CC1N_T2;
+	 												SET_CC2_T3;
+	 												SET_CC2N_T4;
+	 												RESET_CC3_T5;
+	 												RESET_CC3N_T6;
 	 											}
 
 
 	 					    					if( a==0 && b==0 && c==1)
 	 					    					{
-	 					    					RESET_CC1_T1;
-	 					    					SET_CC1N_T2;
-	 					    					RESET_CC2_T3;
-	 					    					RESET_CC2N_T4;
-	 					    					SET_CC3_T5;
-	 					    					RESET_CC3N_T6;
+	 					    						TIM1->CCR1=0;
+	 					    						TIM1->CCR2=0;;
+	 					    						TIM1->CCR3=TIM2->CCR2;
+
+	 					    						SET_CC1_T1;
+	 					    						SET_CC1N_T2;
+	 					    						RESET_CC2_T3;
+	 					    						RESET_CC2N_T4;
+	 					    						SET_CC3_T5;
+	 					    						SET_CC3N_T6;
 	 					    					}
 
 
 	 					    					if( a==1 && b==0 && c==1)
 	 					    					{
-	 					    					RESET_CC1_T1;
-	 					    					RESET_CC1N_T2;
-	 					    					RESET_CC2_T3;
-	 					    					SET_CC2N_T4;
-	 					    					SET_CC3_T5;
-	 					    					RESET_CC3N_T6;
+	 					    						TIM1->CCR1=0;
+	 					    						TIM1->CCR2=0;
+	 					    						TIM1->CCR3=TIM2->CCR2;
+
+	 					    						RESET_CC1_T1;
+	 					    						RESET_CC1N_T2;
+	 					    						SET_CC2_T3;
+	 					    						SET_CC2N_T4;
+	 					    						SET_CC3_T5;
+	 					    						SET_CC3N_T6;
 	 					    					}
 
-	 					    					TIM1->ARR=TIM2->CCR1;
-	 					    				    TIM1->CCR1=TIM2->CCR2;
-	 					    					TIM1->CCR2=TIM2->CCR2;
-	 					    					TIM1->CCR3=TIM2->CCR2;
-	 	  	  	  }
-	 	  	  	  else
-	 	  	  	  {
-					TIM1->ARR=0;
+
+	 	  	}
+	 	  	else
+	 	  	{
+
 					TIM1->CCR1=0;
 					TIM1->CCR2=0;
 					TIM1->CCR3=0;
-	 	  	  	  }
-
-
-
-
-
-
-
+	 	  	}
 
 
 
