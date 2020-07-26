@@ -49,7 +49,7 @@
 /* USER CODE BEGIN PV */
 volatile uint8_t start_stop,licznik;
 uint16_t i,j;
-uint8_t a,b,c,d;
+uint8_t a,b,c,d,recive;
 
 /* USER CODE END PV */
 
@@ -73,8 +73,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 			    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
 			    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
 
-				HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_1);
-				HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_2);
+				//HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_1);
+				//HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_2);
 
 				 start_stop=1;
 				 d=1;
@@ -116,6 +116,16 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 		}
 	}
 
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if(huart->Instance==USART2)
+	{
+		start_stop=0;
+		HAL_UART_Receive_IT(&huart2, &recive, 1);
+
+	}
 }
 
 
@@ -160,17 +170,22 @@ int main(void)
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   //////// konfiguracja Timer 2  ////////////
-    TIM2->ARR=0xFFFE;
+    TIM2->ARR=60000;
     TIM2->PSC=0;
+    HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_1);
+    HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_2);
 
 
     //////// konfiguracja Timer 1  ////////////
-    TIM1->ARR=0xFFFE;
-    TIM1->PSC=0;
+    TIM1->ARR=TIM2->ARR;
+    TIM1->PSC=TIM2->PSC;
     TIM1->CCR1=0;
     TIM1->CCR2=0;
     TIM1->CCR3=0;
   //  HAL_TIMEx_ConfigCommutEvent_IT(&htim1,TIM_TS_ITR3, TIM_COMMUTATION_TRGI);
+
+    /////UASRT 2 ///////////////
+    HAL_UART_Receive_IT(&huart2, &recive, 1);
 
 
 
