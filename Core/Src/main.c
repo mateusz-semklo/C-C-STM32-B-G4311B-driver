@@ -69,7 +69,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 							switch (licznik)
 							{
 							case 1:
-								 TIM1->CCR1=0xFFFE;
+								 TIM1->CCR1=20000;
 								 TIM1->CCR2=0;
 								 TIM1->CCR3=0;
 
@@ -83,7 +83,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 						    break;
 
 							case 2:
-								 TIM1->CCR1=0xFFFE;
+								 TIM1->CCR1=20000;
 								 TIM1->CCR2=0;
 								 TIM1->CCR3=0;
 
@@ -99,7 +99,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 							case 3:
 
 								TIM1->CCR1=0;
-								TIM1->CCR2=0xFFFE;
+								TIM1->CCR2=20000;
 								TIM1->CCR3=0;
 
 								RESET_CC1_T1;
@@ -115,7 +115,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 						    case 4:
 
 						    	TIM1->CCR1=0;
-						    	TIM1->CCR2=0xFFFE;
+						    	TIM1->CCR2=20000;
 						    	TIM1->CCR3=0;
 
 						    	SET_CC1_T1;
@@ -130,7 +130,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 						    case 5:
 						    	TIM1->CCR1=0;
 						    	TIM1->CCR2=0;;
-						    	TIM1->CCR3=0xFFFE;
+						    	TIM1->CCR3=20000;
 
 						    	SET_CC1_T1;
 						    	SET_CC1N_T2;
@@ -144,7 +144,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 						    case 0:
 						    	TIM1->CCR1=0;
 						    	TIM1->CCR2=0;
-						    	TIM1->CCR3=0xFFFE;
+						    	TIM1->CCR3=20000;
 
 						    	RESET_CC1_T1;
 						    	RESET_CC1N_T2;
@@ -241,7 +241,7 @@ int main(void)
 
     //////// konfiguracja Timer 1  ////////////
     TIM1->ARR=0xFFFE;
-    TIM1->PSC=100;
+    TIM1->PSC=0;
     TIM1->CCR1=0;
     TIM1->CCR2=0;
     TIM1->CCR3=0;
