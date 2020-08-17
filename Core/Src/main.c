@@ -36,6 +36,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define duty 9000
 
 /* USER CODE END PD */
 
@@ -48,8 +49,13 @@
 
 /* USER CODE BEGIN PV */
 volatile uint8_t start_stop=1;
-volatile licznik=-1;
-uint16_t i,j;
+volatile uint16_t  licznik=0;
+volatile uint16_t  counter;
+
+uint16_t i,j,a,b,c;
+
+uint32_t pom2;
+uint32_t pom13[2];
 
 /* USER CODE END PV */
 
@@ -62,70 +68,63 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	if(GPIO_Pin==GPIO_PIN_10)
 	{
 
-		licznik++;
+
+licznik++;
+
+
 
 
 							switch (licznik)
 							{
-							case 1:
-												SET_CC1_T1;
-												SET_CC1N_T2;
-												RESET_CC2_T3;
-												SET_CC2N_T4;
-												RESET_CC3_T5;
-												RESET_CC3N_T6;
-						    break;
-
 							case 2:
-												SET_CC1_T1;
-												SET_CC1N_T2;
-												RESET_CC2_T3;
-												RESET_CC2N_T4;
-												RESET_CC3_T5;
-												SET_CC3N_T6;
+						    	TIM1->CCR1=duty;
+						    	TIM1->CCR2=duty;
+						    	TIM1->CCR3=0;
 						    break;
 
 							case 3:
-												RESET_CC1_T1;
-												RESET_CC1N_T2;
-												SET_CC2_T3;
-												SET_CC2N_T4;
-												RESET_CC3_T5;
-												SET_CC3N_T6;
+						    	TIM1->CCR1=0;
+						    	TIM1->CCR2=duty;
+						    	TIM1->CCR3=0;
+
 						    break;
 
-						    case 4:
-						    					RESET_CC1_T1;
-						    					SET_CC1N_T2;
-						    					SET_CC2_T3;
-						    					SET_CC2N_T4;
-						    					RESET_CC3_T5;
-						    					RESET_CC3N_T6;
-							break;
+							case 4:
+						    	TIM1->CCR1=0;
+						    	TIM1->CCR2=duty;
+						    	TIM1->CCR3=duty;
+
+						    break;
 
 						    case 5:
-						    					RESET_CC1_T1;
-						    					SET_CC1N_T2;
-						    					RESET_CC2_T3;
-						    					RESET_CC2N_T4;
-						    					SET_CC3_T5;
-						    					SET_CC3N_T6;
+						    	TIM1->CCR1=0;
+						    	TIM1->CCR2=0;
+						    	TIM1->CCR3=duty;
+
+							break;
+
+						    case 6:
+						    	TIM1->CCR1=duty;
+						    	TIM1->CCR2=0;
+						    	TIM1->CCR3=duty;
+
 						    break;
 
-						    case 0:
-						    					RESET_CC1_T1;
-						    					RESET_CC1N_T2;
-						    					RESET_CC2_T3;
-						    					SET_CC2N_T4;
-						    					SET_CC3_T5;
-						    					SET_CC3N_T6;
+						    case 1:
+						    	TIM1->CCR1=duty;
+						    	TIM1->CCR2=0;
+						    	TIM1->CCR3=0;
+
 						    break;
 							}
 
 
 
-							if(licznik>5)
-							licznik=-1;
+
+
+
+							if(licznik > 6)
+							licznik=0;
 
 
 
@@ -201,35 +200,41 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM4_Init();
   MX_USART2_UART_Init();
-  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-  //////// konfiguracja Timer 2  ////////////
-    TIM2->ARR=0xFFFF;
-    TIM2->PSC=500;
 
-    HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_1);
-   	HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_2);
+
+
+//HAL_ADC_Start_DMA(&hadc1,pom13 , 2);
+//HAL_ADC_Start_DMA(&hadc2,&pom2 , 1);
 
 
   //////// konfiguracja Timer 4  ////////////
-    TIM4->ARR=0xFFFF;
-    TIM4->PSC=500;
-    TIM4->CCR2=2;
+    TIM4->ARR=359;
+   //  TIM4->PSC=100;
+   // TIM4->CCR1=200;
+   // TIM4->CCR2=200;
+    HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_2);
+    HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_1);
 
-   // HAL_TIMEx_HallSensor_Start(&htim4);
+
 
     //////// konfiguracja Timer 1  ////////////
-    TIM1->ARR=0xFFFF;
-    TIM1->PSC=10;
-    TIM1->CCR1=44000;
-    TIM1->CCR2=44000;
-    TIM1->CCR3=44000;
+    TIM1->ARR=65000;
+    TIM1->PSC=0;
+    TIM1->CCR1=0;
+    TIM1->CCR2=0;
+    TIM1->CCR3=0;
   //  HAL_TIMEx_ConfigCommutEvent_IT(&htim1,TIM_TS_ITR3, TIM_COMMUTATION_TRGI);
 
 
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+   	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
     HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
    	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
    	HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
+
+
 
 
 
@@ -242,12 +247,23 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6))
+			  a=1;
+		  else
+			  a=0;
 
-	//  TIM1->ARR=TIM2->CCR1;
-	//  TIM1->CCR1=TIM2->CCR2;
-	//  TIM1->CCR2=TIM2->CCR2;
-	//  TIM1->CCR3=TIM2->CCR2;
+		  if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7))
+		  		  b=1;
+		  else
+			  b=0;
 
+		  if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_8))
+		  		  c=1;
+		  else
+			  c=0;
+
+
+counter=TIM1->CNT;
 
     /* USER CODE END WHILE */
 

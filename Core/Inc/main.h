@@ -59,8 +59,6 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define PWM_INPUT_TIM2_Pin GPIO_PIN_15
-#define PWM_INPUT_TIM2_GPIO_Port GPIOA
 #define Button_Pin GPIO_PIN_10
 #define Button_GPIO_Port GPIOC
 #define Button_EXTI_IRQn EXTI15_10_IRQn
@@ -68,8 +66,6 @@ void Error_Handler(void);
 #define HALL_W_TIM4_GPIO_Port GPIOB
 #define HALL_U_TIM4_Pin GPIO_PIN_7
 #define HALL_U_TIM4_GPIO_Port GPIOB
-#define HALL_V_TIM4_Pin GPIO_PIN_8
-#define HALL_V_TIM4_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
