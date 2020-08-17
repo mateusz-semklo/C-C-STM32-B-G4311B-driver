@@ -20,6 +20,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "adc.h"
+#include "opamp.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -27,6 +29,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "moja_konfiguracja.h"
+#include "stdint.h"
+#include "arm_math.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,14 +52,66 @@
 
 /* USER CODE BEGIN PV */
 volatile uint8_t start_stop,licznik;
-uint16_t i,j;
+uint16_t i,j,k;
+
 uint8_t a,b,c,d,recive;
 
+uint16_t z,x,y;
+uint32_t d1,d2,d3,d4;
+
+//////////// Timer 1/////////////////////////////////////////////////////////
+uint8_t tim1_ch1,tim1_ch1n,tim1_ch2,tim1_ch2n,tim1_ch3,tim1_ch3n,tim1_ch4;
+//////////// Timer 1//////////////////////////////////////////////////////
+
+//////////// Hall sensor//////////////////////////////////////////////////////
+uint8_t hall_1,hall_2,hall_3;
+//////////// Hall sensor//////////////////////////////////////////////////////
+
+
+//////////// SVPWM//////////////////////////////////////////////////////////////
+uint8_t sv_sector;
+float32_t sv_angle_current;
+float32_t sv_Vref;
+float32_t sv_T[3];  // 0 - T0 , 1- T1, 2- T2
+
+//////////// SVPWM//////////////////////////////////////////////////////////////
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
+
+void SVPWM(uint8_t *sector,float32_t *angle_current,float32_t *Vref, float32_t T[])
+{
+
+
+	T[1]=((*Vref * sv_Tz)/sv_Vdc_limit) * arm_sin_f32((*sector * 1,0472 - (*angle_current))); /// pi/3 = 1,0472
+	T[2]=((*Vref * sv_Tz)/sv_Vdc_limit) * arm_sin_f32(  (-(*sector-1)* 1,0472 +  *angle_current) );
+	T[0]=sv_Tz-T[1]-T[2];
+
+
+
+}
+
+
+void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
+{
+
+
+	z++;
+	d1= HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1);
+    while((hadc1.Instance->ISR &= (0x1<<5))!=0){}
+	d2 =HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2);
+	while((hadc1.Instance->ISR &= (0x1<<5))!=0){}
+	d3 =HAL_ADCEx_InjectedGetValue(&hadc2, ADC_INJECTED_RANK_1);
+	while((hadc2.Instance->ISR &= (0x1<<5))!=0){}
+	d4 =HAL_ADCEx_InjectedGetValue(&hadc2, ADC_INJECTED_RANK_2);
+	while((hadc2.Instance->ISR &= (0x1<<5))!=0){}
+
+	 HAL_ADCEx_InjectedStart_IT(&hadc1);
+	 HAL_ADCEx_InjectedStart_IT(&hadc2);
+
+}
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
@@ -63,6 +119,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	{
 		if(d==0)
 		{
+			    HAL_TIM_Base_Start_IT(&htim1);
 
 				HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 			    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
@@ -73,11 +130,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 			    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
 			    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
 
-				//HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_1);
-				//HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_2);
+			    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
 
-				 start_stop=1;
-				 d=1;
+
+
+				// start_stop=1;
+				// d=1;
 		}
 		else
 		{
@@ -96,9 +154,25 @@ void HAL_TIMEx_CommutCallback(TIM_HandleTypeDef *htim)
 	{
 
 
+y++;
 
 	}
 }
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if(htim->Instance==TIM1)
+		{
+		x++;
+
+
+
+		}
+
+}
+
+
+
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
@@ -127,6 +201,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 	}
 }
+
 
 
 /* USER CODE END PFP */
@@ -168,24 +243,45 @@ int main(void)
   MX_TIM4_Init();
   MX_USART2_UART_Init();
   MX_TIM2_Init();
+  MX_ADC1_Init();
+  MX_ADC2_Init();
+  MX_OPAMP1_Init();
+  MX_OPAMP2_Init();
+  MX_OPAMP3_Init();
   /* USER CODE BEGIN 2 */
-  //////// konfiguracja Timer 2  ////////////
-    TIM2->ARR=60000;
-    TIM2->PSC=0;
-    HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_1);
-    HAL_TIM_IC_Start(&htim2, TIM_CHANNEL_2);
+  //////// konfiguracja Timer 2 - PWM input enkoder ////////////
+   TIM2->ARR= TIM2_ARR;
+   TIM2->PSC= TIM2_PSC;
+   HAL_TIM_Base_Start(&htim2);
+
+    //////// konfiguracja Timer 4 - HALL sensor ////////////
+    TIM4->ARR= TIM4_ARR;
+    TIM4->PSC= TIM4_PSC;
+    TIM4->CCR1=TIM4_CCR1;
+    TIM4->CCR2=TIM4_CCR2;
+    HAL_TIMEx_HallSensor_Start(&htim4);
 
 
     //////// konfiguracja Timer 1  ////////////
-    TIM1->ARR=TIM2->ARR;
-    TIM1->PSC=TIM2->PSC;
-    TIM1->CCR1=0;
-    TIM1->CCR2=0;
-    TIM1->CCR3=0;
-  //  HAL_TIMEx_ConfigCommutEvent_IT(&htim1,TIM_TS_ITR3, TIM_COMMUTATION_TRGI);
+    TIM1->ARR= TIM1_ARR;
+    TIM1->PSC= TIM1_PSC;
+    TIM1->CCR1=TIM1_CCR1;
+    TIM1->CCR2=TIM1_CCR2;
+    TIM1->CCR3=TIM1_CCR3;
+    TIM1->CCR4=TIM1_CCR4;
+    HAL_TIMEx_ConfigCommutEvent_IT(&htim1,TIM_TS_ITR3, TIM_COMMUTATION_TRGI);
 
     /////UASRT 2 ///////////////
     HAL_UART_Receive_IT(&huart2, &recive, 1);
+
+
+    ////ADC 1/////
+   if(HAL_OK== ((HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED)) && (HAL_ADCEx_Calibration_Start(&hadc2, ADC_SINGLE_ENDED))) );
+   {
+    HAL_ADCEx_InjectedStart_IT(&hadc1);
+    HAL_ADCEx_InjectedStart_IT(&hadc2);
+   }
+
 
 
 
@@ -196,20 +292,66 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6))
-	 		  a=1;
-	 	  else
-	 		  a=0;
 
-	 	  if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7))
-	 	  		  b=1;
-	 	  else
-	 		  b=0;
+	  	  	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8))
+	 	 		  tim1_ch1=1;
+	 	 	  else
+	 	 		  tim1_ch1=0;
 
-	 	  if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_8))
-	 	  		  c=1;
-	 	  else
-	 		  c=0;
+	 	 	  if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13))
+	 	 		  tim1_ch1n=1;
+	 	 	  else
+	 	 		  tim1_ch1n=0;
+
+	 	 	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_9))
+	 	 		  tim1_ch2=1;
+	 	 	  else
+	 	 		  tim1_ch2=0;
+
+	  	  	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_12))
+	 	 		  tim1_ch2n=1;
+	 	 	  else
+	 	 		  tim1_ch2n=0;
+
+	 	 	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_10))
+	 	 		  tim1_ch3=1;
+	 	 	  else
+	 	 		  tim1_ch3=0;
+
+	 	 	  if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_15))
+	 	 		  tim1_ch3n=1;
+	 	 	  else
+	 	 		  tim1_ch3n=0;
+
+	 	 	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_11))
+	 	 		  tim1_ch4=1;
+	 	 	  else
+	 	 		  tim1_ch4=0;
+
+
+
+
+
+	 	 	if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6))
+	 	 		hall_1=1;
+	 	 	else
+	 	 		hall_1=0;
+
+	 	 	if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7))
+	 	 		hall_2=1;
+	 	    else
+	 	    	hall_2=0;
+
+	 	 	if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_8))
+	 	 		hall_3=1;
+	 	    else
+	 	    	hall_3=0;
+
+
+
+
+	  /**
+
 
 
 	 	if(start_stop==1)
@@ -307,17 +449,18 @@ int main(void)
 	 	  	else
 	 	  	{
 
-					TIM1->CCR1=0;
-					TIM1->CCR2=0;
-					TIM1->CCR3=0;
+				//	TIM1->CCR1=0;
+				//	TIM1->CCR2=0;
+				//	TIM1->CCR3=0;
 	 	  	}
 
 
-
+**/
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
+
   /* USER CODE END 3 */
 }
 
@@ -364,8 +507,9 @@ void SystemClock_Config(void)
   }
   /** Initializes the peripherals clocks 
   */
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2;
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2|RCC_PERIPHCLK_ADC12;
   PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
+  PeriphClkInit.Adc12ClockSelection = RCC_ADC12CLKSOURCE_SYSCLK;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
