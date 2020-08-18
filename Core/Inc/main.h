@@ -64,10 +64,10 @@ void Error_Handler(void);
 #define Button_Pin GPIO_PIN_10
 #define Button_GPIO_Port GPIOC
 #define Button_EXTI_IRQn EXTI15_10_IRQn
-#define HALL_W_TIM4_Pin GPIO_PIN_6
-#define HALL_W_TIM4_GPIO_Port GPIOB
-#define HALL_U_TIM4_Pin GPIO_PIN_7
-#define HALL_U_TIM4_GPIO_Port GPIOB
+#define ENCODER_CH1_Pin GPIO_PIN_6
+#define ENCODER_CH1_GPIO_Port GPIOB
+#define ENCODER_CH2_Pin GPIO_PIN_7
+#define ENCODER_CH2_GPIO_Port GPIOB
 #define HALL_V_TIM4_Pin GPIO_PIN_8
 #define HALL_V_TIM4_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
