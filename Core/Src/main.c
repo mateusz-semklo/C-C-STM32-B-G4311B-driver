@@ -61,6 +61,19 @@ volatile float32_t angle_current_deg,angle_current_rad, angle_rotor_deg,angle_ro
 volatile float32_t Vref;
 //////////// MAI_COMMON/////////////////////////////////////////////////////////
 
+//////////// PID /////////////////////////////////////////////////////////
+volatile float32_t Ialpha,Ibeta,Ia,Ib,Ic,Id,Iq;
+volatile float32_t Valpha,Vbeta,Vd,Vq;
+
+volatile float32_t set_d, ed;
+volatile arm_pid_instance_f32 pid_d;
+
+volatile float32_t set_q, eq;
+volatile arm_pid_instance_f32 pid_q;
+
+//////////// PID /////////////////////////////////////////////////////////
+
+
 //////////// ADC /////////////////////////////////////////////////////////
 volatile uint32_t adc_measure[4],z;
 //////////// ADC /////////////////////////////////////////////////////////
@@ -69,16 +82,13 @@ volatile uint32_t adc_measure[4],z;
 uint8_t tim1_ch1,tim1_ch1n,tim1_ch2,tim1_ch2n,tim1_ch3,tim1_ch3n,tim1_ch4;
 //////////// Timer 1////////////////////////////////////////////////////////
 
-///!!!!!!!!!!!!!!!!!!!!!//
-volatile uint32_t i;
-volatile float32_t k,t,Ia,Ib,Ialpha,Ibeta,kat;
+
 
 
 //////////// SVPWM//////////////////////////////////////////////////////////////
 volatile float32_t sv_T[3];  // [0] - T0 , [1]- T1, [2]- T2
 volatile float32_t sv_T_gate[4]; // [3]- T1+T2+T0/2, [1]- T1+T0/2, [2]- T2+T0/2, T[0]=T0/2
-volatile float32_t sv_S[3]; // switch CH1, CH2  ,CH3
-volatile float32_t sv_S1;
+volatile float32_t sv_S1; // switch CH1, CH2  ,CH3
 volatile float32_t sv_S2;
 volatile float32_t sv_S3;
 //////////// SVPWM//////////////////////////////////////////////////////////////
@@ -135,18 +145,34 @@ void start_up(void)
 	     HAL_UART_Receive_IT(&huart2, &recive, 1);
 
 
+	     /////////// inicjalizacja pid_d ////////////////
+	      set_d=0;
+	      pid_d.Kp=1;
+	      pid_d.Ki=100;
+	      pid_d.Kd=0;
+	      arm_pid_init_f32(&pid_d, 1);
+
+	     /////////// inicjalizacja pid_q ////////////////
+	      set_q=1;
+	      pid_q.Kp=100;
+	      pid_q.Ki=1;
+	      pid_q.Kd=0;
+	      arm_pid_init_f32(&pid_q, 1);
+
+
 	   }
 
 }
 
-void AlphaBeta_To_Angle(float32_t Valpha,float32_t Vbeta,float32_t *angle_current_rad)
+void AlphaBeta_To_Angle_Vref(float32_t Valpha,float32_t Vbeta,float32_t *angle_current_rad,float32_t *Vref)
 {
-
-
+	*angle_current_rad = atan2f(Vbeta,Valpha);
+	arm_sqrt_f32( ((Valpha*Valpha)+(Vbeta*Vbeta)), Vref);
 }
+
+
 void Angle_To_Sector(float32_t angle_current_rad,uint8_t *sector)
 {
-
 
 	if((angle_current_rad>0) && (angle_current_rad<=1.047197)) // pi/3
 		*sector=1;
@@ -162,18 +188,15 @@ void Angle_To_Sector(float32_t angle_current_rad,uint8_t *sector)
 		*sector=6;
 	else{}
 
-
-
-
 }
 
 
-void SVPWM(uint8_t sector,float32_t angle_current_rad,float32_t Vref, float32_t T[], float32_t T_gate[], float32_t S[])
+void SVPWM(uint8_t sector,float32_t angle_current_rad,float32_t Vref, float32_t T[], float32_t T_gate[], float32_t *S1,float32_t *S2,float32_t *S3)
 {
 
 
-	T[1]=((Vref * sv_Tz)/sv_Vdc_limit) * arm_sin_f32((sector * 1.0472) - (angle_current_rad)); /// pi/3 = 1,0472
-	T[2]=((Vref * sv_Tz)/sv_Vdc_limit) * arm_sin_f32((-(sector-1) * 1.0472) +  angle_current_rad) ;
+	T[1]=((Vref * sv_Tz)/sv_Vdc_limit) * arm_sin_f32((sector * 1.047197) - (angle_current_rad)); /// pi/3 = 1,0472
+	T[2]=((Vref * sv_Tz)/sv_Vdc_limit) * arm_sin_f32((-(sector-1) * 1.047197) +  angle_current_rad) ;
 	T[0]=sv_Tz-T[1]-T[2];
 
 	T_gate[0]= (T[0]/2);
@@ -184,50 +207,41 @@ void SVPWM(uint8_t sector,float32_t angle_current_rad,float32_t Vref, float32_t 
 
 	if(sector == 1)
 	{
-		S[0]=T_gate[3];
-		S[1]=T_gate[2];
-		S[2]=T_gate[0];
+		*S1=T_gate[3];
+		*S2=T_gate[2];
+		*S3=T_gate[0];
 	}
 	else if(sector == 2)
 	{
-		S[0]=T_gate[1];
-		S[1]=T_gate[3];
-		S[2]=T_gate[0];
+		*S1=T_gate[1];
+		*S2=T_gate[3];
+		*S3=T_gate[0];
 	}
 	else if(sector == 3)
 	{
-		S[0]=T_gate[0];
-		S[1]=T_gate[3];
-		S[2]=T_gate[2];
+		*S1=T_gate[0];
+		*S2=T_gate[3];
+		*S3=T_gate[2];
 	}
 	else if(sector == 4)
 	{
-		S[0]=T_gate[0];
-		S[1]=T_gate[1];
-		S[2]=T_gate[3];
+		*S1=T_gate[0];
+		*S2=T_gate[1];
+		*S3=T_gate[3];
 	}
 	else if(sector == 5)
 	{
-		S[0]=T_gate[2];
-		S[1]=T_gate[0];
-		S[2]=T_gate[3];
+		*S1=T_gate[2];
+		*S2=T_gate[0];
+		*S3=T_gate[3];
 	}
 	else if(sector == 6)
 	{
-		S[0]=T_gate[3];
-		S[1]=T_gate[0];
-		S[2]=T_gate[1];
+		*S1=T_gate[3];
+		*S2=T_gate[0];
+		*S3=T_gate[1];
 	}
 	else{}
-
-
-	sv_S1=S[0];
-	sv_S2=S[1];
-	sv_S3=S[2];
-
-
-
-
 }
 
 
@@ -271,27 +285,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 		}
 
-	if(htim->Instance==TIM2)
-		{
-		t=t+0.001;
-		Ia=arm_sin_f32( PI * t); //
-		Ib=arm_sin_f32( ( PI *t) - 2.094395);  // 2/3*pi = 2.094395
-		arm_clarke_f32(Ia, Ib, &Ialpha, &Ibeta);
 
-		kat= atan2f(Ibeta,Ialpha);
-
-
-		 Angle_To_Sector(kat , &sector);
-
-				  SVPWM(sector, kat , Vref, sv_T, sv_T_gate, sv_S);
-
-
-
-
-
-
-
-		}
 
 }
 
@@ -307,10 +301,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 		if(htim->Channel==HAL_TIM_ACTIVE_CHANNEL_1)
 		{
 
-		//  TIM1->ARR=TIM2->CCR1;
-		//  TIM1->CCR1=TIM2->CCR2;
-		//  TIM1->CCR2=TIM2->CCR2;
-		//  TIM1->CCR3=TIM2->CCR2;
+
 		}
 	}
 
@@ -365,7 +356,6 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM4_Init();
   MX_USART2_UART_Init();
-  MX_TIM2_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();
   MX_OPAMP1_Init();
@@ -373,14 +363,11 @@ int main(void)
   MX_OPAMP3_Init();
   /* USER CODE BEGIN 2 */
 
-  TIM2->PSC=3;
-  TIM2->ARR=39999;
 
-  Vref= sv_Vdc * sv_limit_max_voltage;
-
-  HAL_TIM_Base_Start_IT(&htim2);
 
     start_up();
+
+
 
   /* USER CODE END 2 */
 
