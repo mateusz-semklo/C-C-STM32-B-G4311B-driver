@@ -55,6 +55,12 @@
 
 /* USER CODE BEGIN PV */
 
+////////////??????????????????????????????????/////////////////////////////////////////////////////////
+volatile float32_t t;
+volatile uint8_t start;
+volatile uint32_t a,b,c,d;
+
+
 //////////// MAIN_COMMON/////////////////////////////////////////////////////////
 volatile uint8_t sector;
 volatile float32_t angle_current_deg,angle_current_rad, angle_rotor_deg,angle_rotor_rad;
@@ -75,11 +81,12 @@ volatile arm_pid_instance_f32 pid_q;
 
 
 //////////// ADC /////////////////////////////////////////////////////////
-volatile uint32_t adc_measure[4],z;
+volatile uint32_t adc_Ia,adc_Ib,adc_Ic,adc_V,index_event_adc;
 //////////// ADC /////////////////////////////////////////////////////////
 
 //////////// Timer 1/////////////////////////////////////////////////////////
 uint8_t tim1_ch1,tim1_ch1n,tim1_ch2,tim1_ch2n,tim1_ch3,tim1_ch3n,tim1_ch4;
+volatile uint32_t index_event_timer1;
 //////////// Timer 1////////////////////////////////////////////////////////
 
 
@@ -117,6 +124,8 @@ void start_up(void)
 	    TIM1->ARR= TIM1_ARR;
 	    TIM1->PSC= TIM1_PSC;
 
+	    HAL_TIM_Base_Start_IT(&htim1);
+
 		HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
 	    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
@@ -128,6 +137,7 @@ void start_up(void)
 	    TIM1->CCR1=(TIM1->ARR/20);
 	    TIM1->CCR2=0;
 	    TIM1->CCR3=0;
+	    TIM1->CCR4=(TIM1->ARR-2);
 
 	    HAL_Delay(1000);
 
@@ -140,6 +150,11 @@ void start_up(void)
 	     TIM4->PSC= TIM4_PSC;
 	     HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_1);
 	     HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_2);
+
+		//////// konfiguracja Timer 4 - encoder ///////////////////
+		  TIM2->ARR= TIM2_ARR;
+		  TIM2->PSC= TIM2_PSC;
+
 
 	     ////////  UASRT 2 /////////////////////////////////////////
 	     HAL_UART_Receive_IT(&huart2, &recive, 1);
@@ -168,6 +183,9 @@ void AlphaBeta_To_Angle_Vref(float32_t Valpha,float32_t Vbeta,float32_t *angle_c
 {
 	*angle_current_rad = atan2f(Vbeta,Valpha);
 	arm_sqrt_f32( ((Valpha*Valpha)+(Vbeta*Vbeta)), Vref);
+
+	 if(*Vref>=sv_Vdc_limit)  // saturacja Vref
+	    	*Vref=sv_Vdc_limit;
 }
 
 
@@ -194,9 +212,8 @@ void Angle_To_Sector(float32_t angle_current_rad,uint8_t *sector)
 void SVPWM(uint8_t sector,float32_t angle_current_rad,float32_t Vref, float32_t T[], float32_t T_gate[], float32_t *S1,float32_t *S2,float32_t *S3)
 {
 
-
-	T[1]=((Vref * sv_Tz)/sv_Vdc_limit) * arm_sin_f32((sector * 1.047197) - (angle_current_rad)); /// pi/3 = 1,0472
-	T[2]=((Vref * sv_Tz)/sv_Vdc_limit) * arm_sin_f32((-(sector-1) * 1.047197) +  angle_current_rad) ;
+	T[1]=sv_modulation * ((Vref * sv_Tz)/sv_Vdc_limit) * arm_sin_f32((sector * 1.047197) - (angle_current_rad)); /// pi/3 = 1,0472
+	T[2]=sv_modulation * ((Vref * sv_Tz)/sv_Vdc_limit) * arm_sin_f32((-(sector-1) * 1.047197) +  angle_current_rad) ;
 	T[0]=sv_Tz-T[1]-T[2];
 
 	T_gate[0]= (T[0]/2);
@@ -249,15 +266,15 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
 
 
-	z++;
-	adc_measure[0]= HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1);
+	index_event_adc++;
+	adc_Ia= HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1);
     while((hadc1.Instance->ISR &= (0x1<<5))!=0){}
-    adc_measure[1] =HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2);
+    adc_Ib =HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2);
 	while((hadc1.Instance->ISR &= (0x1<<5))!=0){}
-	adc_measure[2] =HAL_ADCEx_InjectedGetValue(&hadc2, ADC_INJECTED_RANK_1);
+	adc_Ic =HAL_ADCEx_InjectedGetValue(&hadc2, ADC_INJECTED_RANK_1);
 	while((hadc2.Instance->ISR &= (0x1<<5))!=0){}
-	adc_measure[3] =HAL_ADCEx_InjectedGetValue(&hadc2, ADC_INJECTED_RANK_2);
-	while((hadc2.Instance->ISR &= (0x1<<5))!=0){}
+	//adc_V =HAL_ADCEx_InjectedGetValue(&hadc2, ADC_INJECTED_RANK_2);
+	//while((hadc2.Instance->ISR &= (0x1<<5))!=0){}
 
 	 HAL_ADCEx_InjectedStart_IT(&hadc1);
 	 HAL_ADCEx_InjectedStart_IT(&hadc2);
@@ -268,9 +285,22 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if(GPIO_Pin==GPIO_PIN_10)
 	{
+		if(start==0)
+		{
+			start=1;
+			HAL_TIM_Base_Start_IT(&htim2);
+			HAL_TIM_Base_Start_IT(&htim1);
 
-
-
+		}
+		else
+		{
+			start=0;
+			HAL_TIM_Base_Stop_IT(&htim2);
+			HAL_TIM_Base_Stop_IT(&htim1);
+			TIM1->CCR1=0;
+			TIM1->CCR2=0;
+			TIM1->CCR3=0;
+		}
 	}
 }
 
@@ -279,11 +309,35 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance==TIM1)
+	{
+		if(TIM1->CNT >= ((TIM1->ARR)-10))
+		{
+		arm_clarke_f32(Ia, Ib, &Ialpha, &Ibeta);
+		AlphaBeta_To_Angle_Vref(Ialpha, Ibeta, &angle_current_rad, &Vref);
+		Angle_To_Sector(angle_current_rad, &sector);
+		SVPWM(sector, angle_current_rad , Vref, sv_T, sv_T_gate, &sv_S1, &sv_S2, &sv_S3);
+		TIM1->CCR1=sv_S1;
+		TIM1->CCR2=sv_S2;
+		TIM1->CCR3=sv_S3;
+
+		}
+		else
 		{
 
 
 
 		}
+
+
+	}
+
+	if(htim->Instance==TIM2)
+	{
+		t+=0.001;
+		Ia=Vdc* arm_sin_f32( 10* PI * t);
+		Ib=Vdc* arm_sin_f32( ( 10 * PI *t) - 2.094395);  // 2/3*pi = 2.094395
+
+	}
 
 
 
@@ -356,13 +410,13 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM4_Init();
   MX_USART2_UART_Init();
+  MX_TIM2_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();
   MX_OPAMP1_Init();
   MX_OPAMP2_Init();
   MX_OPAMP3_Init();
   /* USER CODE BEGIN 2 */
-
 
 
     start_up();
@@ -376,7 +430,7 @@ int main(void)
   while (1)
   {
 
-	  	  	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8))
+	  	/**  	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8))
 	 	 		  tim1_ch1=1;
 	 	 	  else
 	 	 		  tim1_ch1=0;
@@ -410,11 +464,7 @@ int main(void)
 	 	 		  tim1_ch4=1;
 	 	 	  else
 	 	 		  tim1_ch4=0;
-
-
-
-
-
+**/
 
 
     /* USER CODE END WHILE */
