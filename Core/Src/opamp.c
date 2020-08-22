@@ -74,7 +74,7 @@ void MX_OPAMP3_Init(void)
   hopamp3.Init.PowerMode = OPAMP_POWERMODE_NORMAL;
   hopamp3.Init.Mode = OPAMP_PGA_MODE;
   hopamp3.Init.NonInvertingInput = OPAMP_NONINVERTINGINPUT_IO0;
-  hopamp3.Init.InternalOutput = ENABLE;
+  hopamp3.Init.InternalOutput = DISABLE;
   hopamp3.Init.TimerControlledMuxmode = OPAMP_TIMERCONTROLLEDMUXMODE_DISABLE;
   hopamp3.Init.PgaConnect = OPAMP_PGA_CONNECT_INVERTINGINPUT_IO0_BIAS;
   hopamp3.Init.PgaGain = OPAMP_PGA_GAIN_16_OR_MINUS_15;
