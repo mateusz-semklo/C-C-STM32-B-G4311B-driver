@@ -43,7 +43,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define duty 4000;
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -318,8 +318,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		switch (licznik)
 								{
 								case 2:
-									TIM1->CCR1=30000;
-									TIM1->CCR2=30000;
+									TIM1->CCR1=duty;
+									TIM1->CCR2=duty;
 									TIM1->CCR3=0;
 
 
@@ -328,7 +328,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 								case 3:
 									TIM1->CCR1=0;
-									TIM1->CCR2=30000;
+									TIM1->CCR2=duty;
 									TIM1->CCR3=0;
 
 
@@ -336,8 +336,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 								case 4:
 									TIM1->CCR1=0;
-									TIM1->CCR2=30000;
-									TIM1->CCR3=30000;
+									TIM1->CCR2=duty;
+									TIM1->CCR3=duty;
 
 
 							    break;
@@ -345,21 +345,21 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 							    case 5:
 							    	TIM1->CCR1=0;
 							    	TIM1->CCR2=0;
-							    	TIM1->CCR3=30000;
+							    	TIM1->CCR3=duty;
 
 
 								break;
 
 							    case 6:
-							    	TIM1->CCR1=30000;
+							    	TIM1->CCR1=duty;
 							    	TIM1->CCR2=0;
-							    	TIM1->CCR3=30000;
+							    	TIM1->CCR3=duty;
 
 
 							    break;
 
 							    case 1:
-							    TIM1->CCR1=30000;
+							    TIM1->CCR1=duty;
 							    TIM1->CCR2=0;
 							    TIM1->CCR3=0;
 							    break;
@@ -503,7 +503,7 @@ int main(void)
   {
 
 
-	  	/**  	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8))
+	  	  	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8))
 	 	 		  tim1_ch1=1;
 	 	 	  else
 	 	 		  tim1_ch1=0;
@@ -537,7 +537,7 @@ int main(void)
 	 	 		  tim1_ch4=1;
 	 	 	  else
 	 	 		  tim1_ch4=0;
-**/
+
 
 
     /* USER CODE END WHILE */
