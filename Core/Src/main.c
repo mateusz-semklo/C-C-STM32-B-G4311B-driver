@@ -128,6 +128,8 @@ void start_up(void)
 			//////// start OPAMP 1 2 ///////////////////////////////////
 			HAL_OPAMP_Start(&hopamp1);
 			HAL_OPAMP_Start(&hopamp2);
+			HAL_OPAMP_Start(&hopamp3);
+
 
 			//////// start ADC 1 2 ///////////////////////////////////
 
@@ -325,9 +327,9 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	  //  IIb=(adc_Ib-ix);
 	  //  IIc=(adc_Ic-ix);
 
-	    pa=IIa/32.0;
-	    pb=IIb/32.0;
-	    pc=IIc/32.0;
+	    pa=IIa/33.0;
+	    pb=IIb/33.0;
+	    pc=IIc/33.0;
 	}
 
 
