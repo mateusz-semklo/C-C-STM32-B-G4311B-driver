@@ -43,7 +43,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define duty 4000;
+#define duty 3000;
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -58,8 +58,9 @@
 ////////////??????????????????????????????????/////////////////////////////////////////////////////////
 volatile float32_t t;
 volatile uint8_t start;
-volatile uint32_t a,b,c,d,licznik,offset1,offset2;
+volatile uint32_t a,b,c,d,licznik,offset1,offset2,offset3,ix,m;
 
+volatile int32_t sum;
 
 //////////// MAIN_COMMON/////////////////////////////////////////////////////////
 volatile uint8_t sector;
@@ -82,6 +83,8 @@ volatile arm_pid_instance_f32 pid_q;
 
 //////////// ADC /////////////////////////////////////////////////////////
 volatile uint32_t adc_Ia,adc_Ib,adc_Ic,adc_V,index_event_adc;
+volatile int32_t IIa,IIb,IIc;
+volatile float32_t pa,pb,pc;
 //////////// ADC /////////////////////////////////////////////////////////
 
 //////////// Timer 1/////////////////////////////////////////////////////////
@@ -145,13 +148,13 @@ void start_up(void)
 			TIM1->ARR= TIM1_ARR;
 			TIM1->PSC= TIM1_PSC;
 
-			TIM1->CCR4=(TIM1->ARR-2);
+			TIM1->CCR4=(TIM1->ARR-10);
 
 			TIM1->CCR1=0;
 			//TIM1->CCR1=30000;
 
-			HAL_TIM_Base_Start_IT(&htim2);
-			HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+		//	HAL_TIM_Base_Start_IT(&htim2);
+		//	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
 
 			HAL_TIM_Base_Start_IT(&htim1);
 
@@ -161,7 +164,7 @@ void start_up(void)
 			   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
 			    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
 			    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
-			//HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
+			HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
 
 
 
@@ -272,6 +275,8 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     while((hadc2.Instance->ISR &= (0x1<<5))!=0){}
 
 
+
+
 	if(index_event_adc<500)
 	{
 
@@ -285,10 +290,18 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 		       HAL_ADCEx_InjectedStop_IT(&hadc1);
 			   HAL_ADCEx_InjectedStop_IT(&hadc2);
 
-			    offset1=adc_Ia-adc_Ic;
-			    offset2=adc_Ia-adc_Ib;
-			    ADC1->OFR1=ADC1->OFR1 | (adc_Ia-adc_Ic);
-			    ADC2->OFR1=ADC2->OFR1 | (adc_Ia-adc_Ib);
+			  //  offset1=adc_Ia-adc_Ic;
+			  //  offset2=adc_Ia-adc_Ib;
+			  //  ix=adc_Ia;
+
+
+			 //   ADC1->OFR1=ADC1->OFR1 | (adc_Ia-adc_Ic);
+			  //  ADC2->OFR1=ADC2->OFR1 | (adc_Ia-adc_Ib);
+			   offset1=adc_Ia;
+			   offset2=adc_Ib;
+			   offset3=adc_Ic;
+
+
 
 
 			    HAL_ADCEx_InjectedStart_IT(&hadc1);
@@ -300,6 +313,21 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 		HAL_ADCEx_InjectedStart_IT(&hadc1);
 	    HAL_ADCEx_InjectedStart_IT(&hadc2);
 
+	    sum=(adc_Ia-offset1)+(adc_Ic-offset3)+(adc_Ib-offset2);
+
+		    IIa=(adc_Ia-offset1);
+		    IIb=(adc_Ib-offset2);
+		    IIc=(adc_Ic-offset3);
+
+	  //  sum=(adc_Ia-ix)+(adc_Ic-ix)+(adc_Ib-ix);
+
+	  //  IIa=(adc_Ia-ix);
+	  //  IIb=(adc_Ib-ix);
+	  //  IIc=(adc_Ic-ix);
+
+	    pa=IIa/32.0;
+	    pb=IIb/32.0;
+	    pc=IIc/32.0;
 	}
 
 
@@ -315,8 +343,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if(GPIO_Pin==GPIO_PIN_10)
 	{
+		licznik++;
 		switch (licznik)
-								{
+		{
+
 								case 2:
 									TIM1->CCR1=duty;
 									TIM1->CCR2=duty;
@@ -364,18 +394,24 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 							    TIM1->CCR3=0;
 							    break;
 
-							    case 0:
-							   							    TIM1->CCR1=0;
-							   							    TIM1->CCR2=0;
-							   							    TIM1->CCR3=0;
-							   							    break;
+							    case 7:
+							  							    TIM1->CCR1=0;
+							  							    TIM1->CCR2=0;
+							  							    TIM1->CCR3=0;
+							  							    break;
+
+
+
 								}
 
-								licznik++;
 
 
 
-								if(licznik>6)
+
+
+
+
+								if(licznik>7)
 								licznik=0;
 
 
@@ -390,7 +426,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance==TIM1)
 	{
-		if(TIM1->CNT >= ((TIM1->ARR)-10))
+		if(TIM1->CNT >= ((TIM1->ARR)-1))
 		{
 
 
@@ -482,7 +518,6 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM4_Init();
   MX_USART2_UART_Init();
-  MX_TIM2_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();
   MX_OPAMP1_Init();
@@ -503,7 +538,7 @@ int main(void)
   {
 
 
-	  	  	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8))
+	  	/**  	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8))
 	 	 		  tim1_ch1=1;
 	 	 	  else
 	 	 		  tim1_ch1=0;
@@ -538,7 +573,7 @@ int main(void)
 	 	 	  else
 	 	 		  tim1_ch4=0;
 
-
+**/
 
     /* USER CODE END WHILE */
 
