@@ -57,7 +57,7 @@
 
 ////////////??????????????????????????????????/////////////////////////////////////////////////////////
 volatile float32_t t;
-volatile uint8_t start;
+
 volatile uint32_t a,b,c,d;
 
 
@@ -65,10 +65,12 @@ volatile uint32_t a,b,c,d;
 volatile uint8_t sector;
 volatile float32_t angle_current_deg,angle_current_rad, angle_rotor_deg,angle_rotor_rad;
 volatile float32_t Vref;
+volatile uint8_t start;
+
 //////////// MAI_COMMON/////////////////////////////////////////////////////////
 
 //////////// PID /////////////////////////////////////////////////////////
-volatile float32_t Ialpha,Ibeta,Ia,Ib,Ic,Id,Iq;
+volatile float32_t Ialpha,Ibeta,Id,Iq;
 volatile float32_t Valpha,Vbeta,Vd,Vq;
 
 volatile float32_t set_d, ed;
@@ -81,7 +83,11 @@ volatile arm_pid_instance_f32 pid_q;
 
 
 //////////// ADC /////////////////////////////////////////////////////////
-volatile uint32_t adc_Ia,adc_Ib,adc_Ic,adc_V,index_event_adc;
+volatile uint16_t adc_Ia,adc_Ib,adc_Ic,adc_V,offset1,offset2,offset3;
+volatile uint32_t index_event_adc;
+volatile float32_t Ia,Ib,Ic;
+volatile int32_t sum_currents;
+
 //////////// ADC /////////////////////////////////////////////////////////
 
 //////////// Timer 1/////////////////////////////////////////////////////////
@@ -116,63 +122,76 @@ void start_up(void)
 {
 	 if(HAL_OK== ((HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED)) && (HAL_ADCEx_Calibration_Start(&hadc2, ADC_SINGLE_ENDED))) )
 	   {
-		//////// start ADC 1 2 ///////////////////////////////////
-	    HAL_ADCEx_InjectedStart_IT(&hadc1);
-	    HAL_ADCEx_InjectedStart_IT(&hadc2);
-
-	    //////// konfiguracja Timer 1  //////////////////////////
-	    TIM1->ARR= TIM1_ARR;
-	    TIM1->PSC= TIM1_PSC;
-
-	    HAL_TIM_Base_Start_IT(&htim1);
-
-		HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-	    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
-	    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
-	    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
-	    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
-	    HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
-	    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
-
-	    TIM1->CCR1=(TIM1->ARR/20);
-	    TIM1->CCR2=0;
-	    TIM1->CCR3=0;
-	    TIM1->CCR4=(TIM1->ARR-2);
-
-	    HAL_Delay(1000);
-
-	    TIM1->CCR1=0;
-	    TIM1->CCR2=0;
-	    TIM1->CCR3=0;
-
-	    //////// konfiguracja Timer 4 - encoder ///////////////////
-	     TIM4->ARR= TIM4_ARR;
-	     TIM4->PSC= TIM4_PSC;
-	     HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_1);
-	     HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_2);
-
-		//////// konfiguracja Timer 4 - encoder ///////////////////
-		  TIM2->ARR= TIM2_ARR;
-		  TIM2->PSC= TIM2_PSC;
+		if(HAL_OK== (HAL_OPAMPEx_SelfCalibrateAll(&hopamp1, &hopamp2, &hopamp3)))
+		{
 
 
-	     ////////  UASRT 2 /////////////////////////////////////////
-	     HAL_UART_Receive_IT(&huart2, &recive, 1);
+			//////// konfiguracja Timer 1  //////////////////////////
+			TIM1->ARR= TIM1_ARR;
+			TIM1->PSC= TIM1_PSC;
+
+			HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+			HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
+			HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+			HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
+			HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+			HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
+			HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
+
+			TIM1->CCR1=(TIM1->ARR/15);
+			TIM1->CCR2=0;
+			TIM1->CCR3=0;
+			TIM1->CCR4=(TIM1->ARR-10);
+
+			HAL_Delay(500);
+
+			//////// konfiguracja Timer 4 - encoder ///////////////////
+			TIM4->ARR= TIM4_ARR;
+			TIM4->PSC= TIM4_PSC;
+			HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_1);
+			HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_2);
+
+			HAL_Delay(100);
+
+			TIM1->CCR1=0;
+			TIM1->CCR2=0;
+			TIM1->CCR3=0;
+
+			HAL_Delay(200);
 
 
-	     /////////// inicjalizacja pid_d ////////////////
-	      set_d=0;
-	      pid_d.Kp=1;
-	      pid_d.Ki=100;
-	      pid_d.Kd=0;
-	      arm_pid_init_f32(&pid_d, 1);
+			//////// konfiguracja Timer 2 ////////// ///////////////////
+			TIM2->ARR= TIM2_ARR;
+			TIM2->PSC= TIM2_PSC;
 
-	     /////////// inicjalizacja pid_q ////////////////
-	      set_q=1;
-	      pid_q.Kp=100;
-	      pid_q.Ki=1;
-	      pid_q.Kd=0;
-	      arm_pid_init_f32(&pid_q, 1);
+			//////// start ADC 1 2 ///////////////////////////////////
+			HAL_OPAMP_Start(&hopamp1);
+			HAL_OPAMP_Start(&hopamp2);
+			HAL_OPAMP_Start(&hopamp3);
+
+			//////// start ADC 1 2 ///////////////////////////////////
+			HAL_ADCEx_InjectedStart_IT(&hadc1);
+			HAL_ADCEx_InjectedStart_IT(&hadc2);
+
+
+			////////  UASRT 2 /////////////////////////////////////////
+			HAL_UART_Receive_IT(&huart2, &recive, 1);
+
+
+			/////////// inicjalizacja pid_d ////////////////
+			set_d=0;
+			pid_d.Kp=1;
+			pid_d.Ki=100;
+			pid_d.Kd=0;
+			arm_pid_init_f32(&pid_d, 1);
+
+			/////////// inicjalizacja pid_q ////////////////
+			set_q=1;
+			pid_q.Kp=100;
+			pid_q.Ki=1;
+			pid_q.Kd=0;
+			arm_pid_init_f32(&pid_q, 1);
+		}
 
 
 	   }
@@ -276,11 +295,39 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	//adc_V =HAL_ADCEx_InjectedGetValue(&hadc2, ADC_INJECTED_RANK_2);
 	//while((hadc2.Instance->ISR &= (0x1<<5))!=0){}
 
+	if(index_event_adc<100)
+	{
+		Ia=0;
+		Ib=0;
+		Ic=0;
+
+
+	}
+	else if(index_event_adc == 100)
+	{
+
+			   offset1=adc_Ia;
+			   offset2=adc_Ib;
+			   offset3=adc_Ic;
+	}
+	else
+	{
+
+	    sum_currents=(adc_Ia-offset1)+(adc_Ic-offset3)+(adc_Ib-offset2);
+
+	    adc_Ia=(adc_Ia-offset1);
+	    adc_Ib=(adc_Ib-offset2);
+	    adc_Ic=(adc_Ic-offset3);
+
+	    Ia=adc_Ia/32.0;
+	    Ib=adc_Ib/32.0;
+	    Ic=adc_Ic/32.0;
+	}
+
 	 HAL_ADCEx_InjectedStart_IT(&hadc1);
 	 HAL_ADCEx_InjectedStart_IT(&hadc2);
 
 }
-
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if(GPIO_Pin==GPIO_PIN_10)
