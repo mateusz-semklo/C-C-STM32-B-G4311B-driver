@@ -86,7 +86,7 @@ volatile arm_pid_instance_f32 pid_q;
 //////////// ADC /////////////////////////////////////////////////////////
 volatile int32_t adc_Ia,adc_Ib,adc_Ic,adc_V,offset1,offset2,offset3;
 volatile uint32_t index_event_adc;
-volatile float32_t Ia,Ib,Ic;
+volatile float32_t Ia,Ib,Ic,Iaa,Ibb,Icc;
 volatile int32_t sum_currents;
 
 //////////// ADC /////////////////////////////////////////////////////////
@@ -324,9 +324,13 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	    adc_Ib=(adc_Ib-offset2);
 	    adc_Ic=(adc_Ic-offset3);
 
-	    Ia=-adc_Ia/33.0;
-	    Ib=-adc_Ib/33.0;
-	    Ic=-adc_Ic/33.0;
+	    Iaa=-adc_Ia/33.0;
+	    Ibb=-adc_Ib/33.0;
+	    Icc=-adc_Ic/33.0;
+
+		t+=0.0005;
+		Ia=Vdc*sv_Vdc_limit* arm_sin_f32(  PI * t);
+		Ib=Vdc*sv_Vdc_limit* arm_sin_f32( (  PI *t) - 2.094395);  // 2/3*pi = 2.094395
 
 
 	        arm_clarke_f32(Ia, Ib, &Ialpha, &Ibeta);
@@ -375,13 +379,14 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	    //	arm_sin_cos_f32(angle_rotor_deg, &pSinVal, &pCosVal);
 
 
+
 	    	arm_inv_park_f32(Vd, Vq, &Valpha, &Vbeta, pSinVal, pCosVal);
 
-	    	AlphaBeta_To_Angle_Vref(Valpha, Vbeta, &angle_current_rad, &Vref);
+	    	AlphaBeta_To_Angle_Vref(Ialpha, Ibeta, &angle_current_rad, &Vref);
 	    	Angle_To_Sector(angle_current_rad, &sector);
 	    	SVPWM(sector, angle_current_rad , Vref, sv_T, sv_T_gate, &sv_S1, &sv_S2, &sv_S3);
 
-	    	TIM1->CCR1 = sv_S1;
+	    TIM1->CCR1 = sv_S1;
 	    	TIM1->CCR2 = sv_S2;
 	    	TIM1->CCR3 = sv_S3;
 
