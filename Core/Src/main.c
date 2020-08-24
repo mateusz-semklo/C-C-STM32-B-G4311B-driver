@@ -179,15 +179,15 @@ void start_up(void)
 
 			/////////// inicjalizacja pid_d ////////////////
 			set_d=0;
-			pid_d.Kp=2;
-			pid_d.Ki=1000;
+			pid_d.Kp=1;
+			pid_d.Ki=100;
 			pid_d.Kd=0;
 			arm_pid_init_f32(&pid_d, 1);
 
 			/////////// inicjalizacja pid_q ////////////////
-			set_q=1;
+			set_q=0.01;
 			pid_q.Kp=1000;
-			pid_q.Ki=2;
+			pid_q.Ki=1;
 			pid_q.Kd=0;
 			arm_pid_init_f32(&pid_q, 1);
 		}
@@ -371,8 +371,8 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	    						Vq=(-sv_Vdc_limit);
 	    						}
 
-	   // 	angle_rotor_deg=TIM4->CCR1;
-	    //	arm_sin_cos_f32(angle_rotor_deg, &pSinVal, &pCosVal);
+	    	//angle_rotor_deg=TIM4->CCR1;
+	    	//arm_sin_cos_f32(angle_rotor_deg, &pSinVal, &pCosVal);
 
 
 	    	arm_inv_park_f32(Vd, Vq, &Valpha, &Vbeta, pSinVal, pCosVal);
