@@ -378,6 +378,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	    	arm_inv_park_f32(Vd, Vq, &Valpha, &Vbeta, pSinVal, pCosVal);
 
 	    	AlphaBeta_To_Angle_Vref(Valpha, Vbeta, &angle_current_rad, &Vref);
+	    	angle_current_deg=57.2957*angle_current_rad;
 	    	Angle_To_Sector(angle_current_rad, &sector);
 	    	SVPWM(sector, angle_current_rad , Vref, sv_T, sv_T_gate, &sv_S1, &sv_S2, &sv_S3);
 
