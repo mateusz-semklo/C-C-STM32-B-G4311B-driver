@@ -19,7 +19,7 @@
 #define sv_limit_max_voltage 0.577350 // 2/3*sqrt(3)/2 limit all vector
 #define sv_Vdc_limit (sv_Vdc * sv_limit_max_voltage)
 #define sv_Tz 1000  // x second
-#define sv_modulation 0.9
+#define sv_modulation 0.8
 //////////// SVPWM//////////////////////////////////////////////////////////////
 
 ////////// TIMER 1 /////////////////////////////////////////////////////////////

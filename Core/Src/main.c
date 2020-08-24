@@ -66,7 +66,7 @@ volatile uint8_t sector;
 volatile float32_t angle_current_deg,angle_current_rad, angle_rotor_deg,angle_rotor_rad;
 volatile float32_t pSinVal,pCosVal;
 volatile float32_t Vref;
-volatile uint8_t start;
+volatile uint8_t start,licznik;
 
 //////////// MAI_COMMON/////////////////////////////////////////////////////////
 
@@ -131,7 +131,7 @@ void start_up(void)
 			TIM1->ARR= TIM1_ARR;
 			TIM1->PSC= TIM1_PSC;
 
-			TIM1->CCR1=(TIM1->ARR/15);
+			TIM1->CCR1=(TIM1->ARR/10);
 			TIM1->CCR2=0;
 			TIM1->CCR3=0;
 			TIM1->CCR4=TIM1_CCR4;
@@ -145,7 +145,7 @@ void start_up(void)
 			HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
 
 
-			HAL_Delay(500);
+			HAL_Delay(800);
 
 			//////// konfiguracja Timer 4 - encoder ///////////////////
 			TIM4->ARR= TIM4_ARR;
@@ -153,7 +153,7 @@ void start_up(void)
 			HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_1);
 			HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_2);
 
-			HAL_Delay(100);
+			HAL_Delay(400);
 
 			TIM1->CCR1=0;
 			TIM1->CCR2=0;
@@ -319,6 +319,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 	 //   sum_currents=(adc_Ia-offset1)+(adc_Ic-offset3)+(adc_Ib-offset2);
 
+
 	    adc_Ia=(adc_Ia-offset1);
 	    adc_Ib=(adc_Ib-offset2);
 	    adc_Ic=(adc_Ic-offset3);
@@ -369,8 +370,11 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	    						pid_q.state[2]=Vq_prev;
 	    						Vq=(-sv_Vdc_limit);
 	    						}
+
 	   // 	angle_rotor_deg=TIM4->CCR1;
 	    //	arm_sin_cos_f32(angle_rotor_deg, &pSinVal, &pCosVal);
+
+
 	    	arm_inv_park_f32(Vd, Vq, &Valpha, &Vbeta, pSinVal, pCosVal);
 
 	    	AlphaBeta_To_Angle_Vref(Valpha, Vbeta, &angle_current_rad, &Vref);
@@ -424,6 +428,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 			TIM1->CCR2=0;
 			TIM1->CCR3=0;
 		}
+
+
+
+
+
 	}
 }
 
