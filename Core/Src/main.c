@@ -180,13 +180,13 @@ void start_up(void)
 			/////////// inicjalizacja pid_d ////////////////
 			set_d=0;
 			pid_d.Kp=1;
-			pid_d.Ki=100;
+			pid_d.Ki=2;
 			pid_d.Kd=0;
 			arm_pid_init_f32(&pid_d, 1);
 
 			/////////// inicjalizacja pid_q ////////////////
-			set_q=0.01;
-			pid_q.Kp=1000;
+			set_q=10;
+			pid_q.Kp=10;
 			pid_q.Ki=1;
 			pid_q.Kd=0;
 			arm_pid_init_f32(&pid_q, 1);
@@ -599,7 +599,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV2;
-  RCC_OscInitStruct.PLL.PLLN = 80;
+  RCC_OscInitStruct.PLL.PLLN = 85;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
   RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
@@ -616,7 +616,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_7) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_8) != HAL_OK)
   {
     Error_Handler();
   }
