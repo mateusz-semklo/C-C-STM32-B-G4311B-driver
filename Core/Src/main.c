@@ -64,6 +64,7 @@ volatile uint32_t a,b,c,d;
 //////////// MAIN_COMMON/////////////////////////////////////////////////////////
 volatile uint8_t sector;
 volatile float32_t angle_current_deg,angle_current_rad, angle_rotor_deg,angle_rotor_rad;
+volatile float32_t pSinVal,pCosVal;
 volatile float32_t Vref;
 volatile uint8_t start;
 
@@ -71,7 +72,7 @@ volatile uint8_t start;
 
 //////////// PID /////////////////////////////////////////////////////////
 volatile float32_t Ialpha,Ibeta,Id,Iq;
-volatile float32_t Valpha,Vbeta,Vd,Vq;
+volatile float32_t Valpha,Vbeta,Vd,Vq,Vd_prev,Vq_prev;
 
 volatile float32_t set_d, ed;
 volatile arm_pid_instance_f32 pid_d;
@@ -83,7 +84,7 @@ volatile arm_pid_instance_f32 pid_q;
 
 
 //////////// ADC /////////////////////////////////////////////////////////
-volatile uint16_t adc_Ia,adc_Ib,adc_Ic,adc_V,offset1,offset2,offset3;
+volatile int32_t adc_Ia,adc_Ib,adc_Ic,adc_V,offset1,offset2,offset3;
 volatile uint32_t index_event_adc;
 volatile float32_t Ia,Ib,Ic;
 volatile int32_t sum_currents;
@@ -141,7 +142,7 @@ void start_up(void)
 			TIM1->CCR1=(TIM1->ARR/15);
 			TIM1->CCR2=0;
 			TIM1->CCR3=0;
-			TIM1->CCR4=(TIM1->ARR-10);
+			TIM1->CCR4=TIM1_CCR4;
 
 			HAL_Delay(500);
 
@@ -160,9 +161,6 @@ void start_up(void)
 			HAL_Delay(200);
 
 
-			//////// konfiguracja Timer 2 ////////// ///////////////////
-			TIM2->ARR= TIM2_ARR;
-			TIM2->PSC= TIM2_PSC;
 
 			//////// start ADC 1 2 ///////////////////////////////////
 			HAL_OPAMP_Start(&hopamp1);
@@ -173,6 +171,12 @@ void start_up(void)
 			HAL_ADCEx_InjectedStart_IT(&hadc1);
 			HAL_ADCEx_InjectedStart_IT(&hadc2);
 
+			//////// start ADC 1 2 ///////////////////////////////////
+		//	HAL_OPAMP_Start(&hopamp1);
+		//	HAL_OPAMP_Start(&hopamp2);
+		//	HAL_OPAMP_Start(&hopamp3);
+
+
 
 			////////  UASRT 2 /////////////////////////////////////////
 			HAL_UART_Receive_IT(&huart2, &recive, 1);
@@ -181,14 +185,14 @@ void start_up(void)
 			/////////// inicjalizacja pid_d ////////////////
 			set_d=0;
 			pid_d.Kp=1;
-			pid_d.Ki=100;
+			pid_d.Ki=0;
 			pid_d.Kd=0;
 			arm_pid_init_f32(&pid_d, 1);
 
 			/////////// inicjalizacja pid_q ////////////////
 			set_q=1;
-			pid_q.Kp=100;
-			pid_q.Ki=1;
+			pid_q.Kp=1;
+			pid_q.Ki=0;
 			pid_q.Kd=0;
 			arm_pid_init_f32(&pid_q, 1);
 		}
@@ -293,14 +297,14 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	index_event_adc++;
 	adc_Ia= HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1);
     while((hadc1.Instance->ISR &= (0x1<<5))!=0){}
-    adc_Ib =HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2);
+    adc_Ic =HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2);
 	while((hadc1.Instance->ISR &= (0x1<<5))!=0){}
-	adc_Ic =HAL_ADCEx_InjectedGetValue(&hadc2, ADC_INJECTED_RANK_1);
+	adc_Ib =HAL_ADCEx_InjectedGetValue(&hadc2, ADC_INJECTED_RANK_1);
 	while((hadc2.Instance->ISR &= (0x1<<5))!=0){}
 	//adc_V =HAL_ADCEx_InjectedGetValue(&hadc2, ADC_INJECTED_RANK_2);
 	//while((hadc2.Instance->ISR &= (0x1<<5))!=0){}
 
-	if(index_event_adc<100)
+/**	if(index_event_adc<300)
 	{
 		Ia=0;
 		Ib=0;
@@ -308,7 +312,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 
 	}
-	else if(index_event_adc == 100)
+	else if(index_event_adc == 300)
 	{
 
 			   offset1=adc_Ia;
@@ -327,7 +331,68 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	    Ia=adc_Ia/33.0;
 	    Ib=adc_Ib/33.0;
 	    Ic=adc_Ic/33.0;
+
+
+	    arm_clarke_f32(Ia, Ib, &Ialpha, &Ibeta);
+	    	angle_rotor_deg=TIM4->CCR1;
+	    	arm_sin_cos_f32(angle_rotor_deg, &pSinVal, &pCosVal);
+	    	arm_park_f32(Ialpha, Ibeta, &Id, &Iq, pSinVal, pCosVal);
+
+	    	set_d=0.5;
+	    	set_q=0;
+
+	    	// pid dla osi d
+	    						ed=set_d-Id;
+	    						Vd_prev=pid_d.state[2];
+	    						Vd=arm_pid_f32(&pid_d, ed);
+	    	// saturacja i anty-wind-up
+	    						if(Vd>=sv_Vdc_limit)
+	    						{
+	    							pid_d.state[2]=Vd_prev;
+	    							Vd=sv_Vdc_limit;
+	    						}
+
+	    						if(Vd<=(-sv_Vdc_limit))
+	    						{
+	    							pid_d.state[2]=Vd_prev;
+	    							Vd=(-sv_Vdc_limit);
+	    						}
+
+	    	// pid dla osi q
+	    						eq=set_q-Iq;
+	    						Vq_prev=pid_q.state[2];
+	    						Vq=arm_pid_f32(&pid_q, eq);
+	    	// saturacja i anty-wind-up
+	    						if(Vq>=sv_Vdc_limit)
+	    						{
+	    						pid_q.state[2]=Vq_prev;
+	    						Vq=sv_Vdc_limit;
+	    						}
+
+	    						if(Vq<=(-sv_Vdc_limit))
+	    						{
+	    						pid_q.state[2]=Vq_prev;
+	    						Vq=(-sv_Vdc_limit);
+	    						}
+	    	angle_rotor_deg=TIM4->CCR1;
+	    	arm_sin_cos_f32(angle_rotor_deg, &pSinVal, &pCosVal);
+
+	    	arm_inv_park_f32(Vd, Vq, &Valpha, &Vbeta, pSinVal, pCosVal);
+
+	    	AlphaBeta_To_Angle_Vref(Valpha, Vbeta, &angle_current_rad, &Vref);
+	    	Angle_To_Sector(angle_current_rad, &sector);
+	    	SVPWM(sector, angle_current_rad , Vref, sv_T, sv_T_gate, &sv_S1, &sv_S2, &sv_S3);
+
+	    	TIM1->CCR1 = sv_S1;
+	    	TIM1->CCR2 = sv_S2;
+	    	TIM1->CCR3 = sv_S3;
+
+	    	Ia=0;
+	    	Ib=0;
+	    	Ic=0;
 	}
+
+**/
 
 	 HAL_ADCEx_InjectedStart_IT(&hadc1);
 	 HAL_ADCEx_InjectedStart_IT(&hadc2);
@@ -340,15 +405,27 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		if(start==0)
 		{
 			start=1;
-			HAL_TIM_Base_Start_IT(&htim2);
-			HAL_TIM_Base_Start_IT(&htim1);
+			HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+			HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
+			HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+			HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
+			HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+			HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
+			HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
+
 
 		}
 		else
 		{
 			start=0;
-			HAL_TIM_Base_Stop_IT(&htim2);
-			HAL_TIM_Base_Stop_IT(&htim1);
+			HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
+			HAL_TIMEx_PWMN_Stop(&htim1, TIM_CHANNEL_1);
+			HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_2);
+			HAL_TIMEx_PWMN_Stop(&htim1, TIM_CHANNEL_2);
+			HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_3);
+			HAL_TIMEx_PWMN_Stop(&htim1, TIM_CHANNEL_3);
+			HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_4);
+
 			TIM1->CCR1=0;
 			TIM1->CCR2=0;
 			TIM1->CCR3=0;
@@ -362,36 +439,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance==TIM1)
 	{
-		if(TIM1->CNT >= ((TIM1->ARR)-10))
-		{
-		arm_clarke_f32(Ia, Ib, &Ialpha, &Ibeta);
-		AlphaBeta_To_Angle_Vref(Ialpha, Ibeta, &angle_current_rad, &Vref);
-		Angle_To_Sector(angle_current_rad, &sector);
-		SVPWM(sector, angle_current_rad , Vref, sv_T, sv_T_gate, &sv_S1, &sv_S2, &sv_S3);
-	//	TIM1->CCR1=sv_S1;
-	//	TIM1->CCR2=sv_S2;
-	//	TIM1->CCR3=sv_S3;
-
-		}
-		else
-		{
-
-
-
-		}
 
 
 	}
-
-	if(htim->Instance==TIM2)
-	{
-		t+=0.001;
-		Ia=Vdc* arm_sin_f32(  PI * t);
-		Ib=Vdc* arm_sin_f32( (  PI *t) - 2.094395);  // 2/3*pi = 2.094395
-
-	}
-
-
 
 }
 
@@ -462,7 +512,6 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM4_Init();
   MX_USART2_UART_Init();
-  MX_TIM2_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();
   MX_OPAMP1_Init();
