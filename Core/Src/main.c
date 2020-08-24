@@ -57,7 +57,7 @@
 
 ////////////??????????????????????????????????/////////////////////////////////////////////////////////
 volatile float32_t t;
-
+volatile float32_t t1,t2,t3;
 volatile uint32_t a,b,c,d;
 
 
@@ -235,6 +235,10 @@ void SVPWM(uint8_t sector,float32_t angle_current_rad,float32_t Vref, float32_t 
 	T[2]=sv_modulation * ((Vref * sv_Tz)/sv_Vdc_limit) * arm_sin_f32((-(sector-1) * 1.047197) +  angle_current_rad) ;
 	T[0]=sv_Tz-T[1]-T[2];
 
+	t1=T[1];
+	t2=T[2];
+	t3=T[0];
+
 	T_gate[0]= (T[0]/2);
 	T_gate[1]= T[1]+(T_gate[0]);
 	T_gate[2]= T[2]+(T_gate[0]);
@@ -278,6 +282,7 @@ void SVPWM(uint8_t sector,float32_t angle_current_rad,float32_t Vref, float32_t 
 		*S3=T_gate[1];
 	}
 	else{}
+
 }
 
 
@@ -319,9 +324,9 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	    adc_Ib=(adc_Ib-offset2);
 	    adc_Ic=(adc_Ic-offset3);
 
-	    Ia=adc_Ia/32.0;
-	    Ib=adc_Ib/32.0;
-	    Ic=adc_Ic/32.0;
+	    Ia=adc_Ia/33.0;
+	    Ib=adc_Ib/33.0;
+	    Ic=adc_Ic/33.0;
 	}
 
 	 HAL_ADCEx_InjectedStart_IT(&hadc1);
@@ -363,9 +368,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		AlphaBeta_To_Angle_Vref(Ialpha, Ibeta, &angle_current_rad, &Vref);
 		Angle_To_Sector(angle_current_rad, &sector);
 		SVPWM(sector, angle_current_rad , Vref, sv_T, sv_T_gate, &sv_S1, &sv_S2, &sv_S3);
-		TIM1->CCR1=sv_S1;
-		TIM1->CCR2=sv_S2;
-		TIM1->CCR3=sv_S3;
+	//	TIM1->CCR1=sv_S1;
+	//	TIM1->CCR2=sv_S2;
+	//	TIM1->CCR3=sv_S3;
 
 		}
 		else
@@ -381,8 +386,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	if(htim->Instance==TIM2)
 	{
 		t+=0.001;
-		Ia=Vdc* arm_sin_f32( 10* PI * t);
-		Ib=Vdc* arm_sin_f32( ( 10 * PI *t) - 2.094395);  // 2/3*pi = 2.094395
+		Ia=Vdc* arm_sin_f32(  PI * t);
+		Ib=Vdc* arm_sin_f32( (  PI *t) - 2.094395);  // 2/3*pi = 2.094395
 
 	}
 
