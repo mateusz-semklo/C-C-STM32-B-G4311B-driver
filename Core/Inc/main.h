@@ -68,8 +68,6 @@ void Error_Handler(void);
 #define ENCODER_CH1_GPIO_Port GPIOB
 #define ENCODER_CH2_Pin GPIO_PIN_7
 #define ENCODER_CH2_GPIO_Port GPIOB
-#define HALL_V_TIM4_Pin GPIO_PIN_8
-#define HALL_V_TIM4_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

@@ -58,7 +58,7 @@
 ////////////??????????????????????????????????/////////////////////////////////////////////////////////
 volatile float32_t t;
 volatile float32_t t1,t2,t3;
-volatile uint32_t a,b,c,d;
+volatile uint32_t a,b,c,d,p;
 
 
 //////////// MAIN_COMMON/////////////////////////////////////////////////////////
@@ -68,7 +68,7 @@ volatile float32_t pSinVal,pCosVal;
 volatile float32_t Vref;
 volatile uint8_t start,licznik;
 
-//////////// MAI_COMMON/////////////////////////////////////////////////////////
+//////////// MAIN_COMMON/////////////////////////////////////////////////////////
 
 //////////// PID /////////////////////////////////////////////////////////
 volatile float32_t Ialpha,Ibeta,Id,Iq;
@@ -81,6 +81,13 @@ volatile float32_t set_q, eq;
 volatile arm_pid_instance_f32 pid_q;
 
 //////////// PID /////////////////////////////////////////////////////////
+
+//////////// SPEED PID /////////////////////////////////////////////////////////
+volatile float32_t set_speed, e_speed, speed;
+volatile arm_pid_instance_f32 pid_iq_speed;
+volatile float32_t iq_speed, iq_speed_prev;
+volatile uint32_t capture_tim8_ccr2;
+//////////// SPEED PID /////////////////////////////////////////////////////////
 
 
 //////////// ADC /////////////////////////////////////////////////////////
@@ -95,8 +102,6 @@ volatile int32_t sum_currents;
 uint8_t tim1_ch1,tim1_ch1n,tim1_ch2,tim1_ch2n,tim1_ch3,tim1_ch3n,tim1_ch4;
 volatile uint32_t index_event_timer1;
 //////////// Timer 1////////////////////////////////////////////////////////
-
-
 
 
 //////////// SVPWM//////////////////////////////////////////////////////////////
@@ -121,11 +126,11 @@ void SystemClock_Config(void);
 
 void start_up(void)
 {
+
 	 if(HAL_OK== ((HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED)) && (HAL_ADCEx_Calibration_Start(&hadc2, ADC_SINGLE_ENDED))) )
 	   {
 		if(HAL_OK== (HAL_OPAMPEx_SelfCalibrateAll(&hopamp1, &hopamp2, &hopamp3)))
 		{
-
 
 			//////// konfiguracja Timer 1  //////////////////////////
 			TIM1->ARR= TIM1_ARR;
@@ -152,6 +157,7 @@ void start_up(void)
 			TIM4->PSC= TIM4_PSC;
 			HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_1);
 			HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_2);
+			//////// konfiguracja Timer 4 - encoder ///////////////////
 
 			HAL_Delay(400);
 
@@ -162,12 +168,16 @@ void start_up(void)
 			HAL_Delay(200);
 
 
+			//////// konfiguracja Timer 8  ///////////////////
+			TIM8->ARR= TIM8_ARR;
+			TIM8->PSC= TIM8_PSC;
+			HAL_TIM_IC_Start(&htim8, TIM_CHANNEL_2);
+
 
 			//////// start ADC 1 2 ///////////////////////////////////
 			HAL_OPAMP_Start(&hopamp1);
 			HAL_OPAMP_Start(&hopamp2);
 			HAL_OPAMP_Start(&hopamp3);
-
 			//////// start ADC 1 2 ///////////////////////////////////
 			HAL_ADCEx_InjectedStart_IT(&hadc1);
 			HAL_ADCEx_InjectedStart_IT(&hadc2);
@@ -180,16 +190,23 @@ void start_up(void)
 			/////////// inicjalizacja pid_d ////////////////
 			set_d=0;
 			pid_d.Kp=1;
-			pid_d.Ki=2;
+			pid_d.Ki=1;
 			pid_d.Kd=0;
 			arm_pid_init_f32(&pid_d, 1);
 
 			/////////// inicjalizacja pid_q ////////////////
-			set_q=10;
-			pid_q.Kp=10;
+			set_q=1;
+			pid_q.Kp=4;
 			pid_q.Ki=1;
 			pid_q.Kd=0;
 			arm_pid_init_f32(&pid_q, 1);
+
+			/////////// inicjalizacja pid_speed ////////////////
+			set_speed=3000;
+			pid_iq_speed.Kp=2;
+			pid_iq_speed.Ki=1;
+			pid_iq_speed.Kd=0;
+			arm_pid_init_f32(&pid_iq_speed, 1);
 		}
 
 
@@ -287,6 +304,11 @@ void SVPWM(uint8_t sector,float32_t angle_current_rad,float32_t Vref, float32_t 
 
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
+	capture_tim8_ccr2= TIM8->CCR2;
+	if(capture_tim8_ccr2 <= 0)
+		speed=0;
+	else
+		speed=revolution_per_min/capture_tim8_ccr2;
 
 
 	index_event_adc++;
@@ -309,16 +331,13 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	}
 	else if(index_event_adc == 300)
 	{
-
 			   offset1=adc_Ia;
 			   offset2=adc_Ib;
 			   offset3=adc_Ic;
 	}
 	else
 	{
-
 	 //   sum_currents=(adc_Ia-offset1)+(adc_Ic-offset3)+(adc_Ib-offset2);
-
 
 	    adc_Ia=(adc_Ia-offset1);
 	    adc_Ib=(adc_Ib-offset2);
@@ -328,14 +347,30 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	    Ib=-adc_Ib/33.0;
 	    Ic=-adc_Ic/33.0;
 
-
 	        arm_clarke_f32(Ia, Ib, &Ialpha, &Ibeta);
 	    	angle_rotor_deg=TIM4->CCR1;
 	    	arm_sin_cos_f32(angle_rotor_deg, &pSinVal, &pCosVal);
 	    	arm_park_f32(Ialpha, Ibeta, &Id, &Iq, pSinVal, pCosVal);
 
-	    //	set_d=0;
-	    //	set_q=1;
+
+	    	// pid speed
+	    						e_speed=set_speed-speed;
+	    						iq_speed_prev=pid_iq_speed.state[2];
+	    						iq_speed=arm_pid_f32(&pid_iq_speed, e_speed);
+	    	// saturacja i anty-wind-up
+	    						if(iq_speed>=current_limit_max_iq)
+	    						{
+	    							pid_iq_speed.state[2]=iq_speed_prev;
+	    							iq_speed=current_limit_max_iq;
+	    						}
+
+	    						if(iq_speed<=current_limit_min_iq)
+	    						{
+	    							pid_iq_speed.state[2]=iq_speed_prev;
+	    							iq_speed=current_limit_min_iq;
+	    						}
+
+
 
 	    	// pid dla osi d
 	    						ed=set_d-Id;
@@ -355,7 +390,8 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	    						}
 
 	    	// pid dla osi q
-	    						eq=set_q-Iq;
+	    						//eq=set_q-Iq;
+	    						eq=iq_speed-Iq;
 	    						Vq_prev=pid_q.state[2];
 	    						Vq=arm_pid_f32(&pid_q, eq);
 	    	// saturacja i anty-wind-up
@@ -373,8 +409,6 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 	    	//angle_rotor_deg=TIM4->CCR1;
 	    	//arm_sin_cos_f32(angle_rotor_deg, &pSinVal, &pCosVal);
-
-
 	    	arm_inv_park_f32(Vd, Vq, &Valpha, &Vbeta, pSinVal, pCosVal);
 
 	    	AlphaBeta_To_Angle_Vref(Valpha, Vbeta, &angle_current_rad, &Vref);
@@ -384,18 +418,12 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	    	TIM1->CCR1 = sv_S1;
 	    	TIM1->CCR2 = sv_S2;
 	    	TIM1->CCR3 = sv_S3;
-
-	    	//Ia=0;
-	    	//Ib=0;
-	    	//Ic=0;
 	}
-
-
 
 	 HAL_ADCEx_InjectedStart_IT(&hadc1);
 	 HAL_ADCEx_InjectedStart_IT(&hadc2);
-
 }
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if(GPIO_Pin==GPIO_PIN_10)
@@ -410,8 +438,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 			HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
 			HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
 
-
-
 		}
 		else
 		{
@@ -423,45 +449,18 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 			HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_3);
 			HAL_TIMEx_PWMN_Stop(&htim1, TIM_CHANNEL_3);
 
-
 			TIM1->CCR1=0;
 			TIM1->CCR2=0;
 			TIM1->CCR3=0;
 		}
-
-
-
-
-
 	}
 }
-
-
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	if(htim->Instance==TIM1)
+	if(htim->Instance==TIM3)
 	{
 
-
-	}
-
-}
-
-
-
-
-void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
-{
-
-	if(htim->Instance==TIM2)
-	{
-
-		if(htim->Channel==HAL_TIM_ACTIVE_CHANNEL_1)
-		{
-
-
-		}
 	}
 
 }
@@ -520,12 +519,10 @@ int main(void)
   MX_OPAMP1_Init();
   MX_OPAMP2_Init();
   MX_OPAMP3_Init();
+  MX_TIM8_Init();
   /* USER CODE BEGIN 2 */
 
-
     start_up();
-
-
 
   /* USER CODE END 2 */
 
@@ -533,43 +530,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-	  	/**  	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8))
-	 	 		  tim1_ch1=1;
-	 	 	  else
-	 	 		  tim1_ch1=0;
-
-	 	 	  if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13))
-	 	 		  tim1_ch1n=1;
-	 	 	  else
-	 	 		  tim1_ch1n=0;
-
-	 	 	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_9))
-	 	 		  tim1_ch2=1;
-	 	 	  else
-	 	 		  tim1_ch2=0;
-
-	  	  	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_12))
-	 	 		  tim1_ch2n=1;
-	 	 	  else
-	 	 		  tim1_ch2n=0;
-
-	 	 	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_10))
-	 	 		  tim1_ch3=1;
-	 	 	  else
-	 	 		  tim1_ch3=0;
-
-	 	 	  if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_15))
-	 	 		  tim1_ch3n=1;
-	 	 	  else
-	 	 		  tim1_ch3n=0;
-
-	 	 	  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_11))
-	 	 		  tim1_ch4=1;
-	 	 	  else
-	 	 		  tim1_ch4=0;
-**/
-
 
     /* USER CODE END WHILE */
 
