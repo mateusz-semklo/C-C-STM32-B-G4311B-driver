@@ -39,9 +39,9 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING
  17 .debug_line   000146c8  00000000  00000000  000649a1  2**0
                   CONTENTS, READONLY, DEBUGGING
- 18 .debug_str    000deba9  00000000  00000000  00079069  2**0
+ 18 .debug_str    000debaa  00000000  00000000  00079069  2**0
                   CONTENTS, READONLY, DEBUGGING
- 19 .comment      0000007b  00000000  00000000  00157c12  2**0
+ 19 .comment      0000007b  00000000  00000000  00157c13  2**0
                   CONTENTS, READONLY
  20 .debug_frame  00005f2c  00000000  00000000  00157c90  2**2
                   CONTENTS, READONLY, DEBUGGING
@@ -1864,7 +1864,7 @@ void start_up(void)
  80012f8:	62da      	str	r2, [r3, #44]	; 0x2c
 			TIM1->PSC= TIM1_PSC;
  80012fa:	4b4d      	ldr	r3, [pc, #308]	; (8001430 <start_up+0x17c>)
- 80012fc:	2227      	movs	r2, #39	; 0x27
+ 80012fc:	2209      	movs	r2, #9
  80012fe:	629a      	str	r2, [r3, #40]	; 0x28
 
 			TIM1->CCR1=(TIM1->ARR/10);
@@ -2666,8 +2666,8 @@ void SVPWM(uint8_t sector,float32_t angle_current_rad,float32_t Vref, float32_t 
  800195c:	e8bd 83b0 	ldmia.w	sp!, {r4, r5, r7, r8, r9, pc}
  8001960:	0f9096bc 	.word	0x0f9096bc
  8001964:	402bb67a 	.word	0x402bb67a
- 8001968:	cccccccd 	.word	0xcccccccd
- 800196c:	3feccccc 	.word	0x3feccccc
+ 8001968:	33333333 	.word	0x33333333
+ 800196c:	3feb3333 	.word	0x3feb3333
  8001970:	a437824d 	.word	0xa437824d
  8001974:	3ff0c151 	.word	0x3ff0c151
  8001978:	447a0000 	.word	0x447a0000
@@ -3171,11 +3171,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 								case 2:
 									TIM1->CCR1=duty;
  8001ddc:	4b2a      	ldr	r3, [pc, #168]	; (8001e88 <HAL_GPIO_EXTI_Callback+0xfc>)
- 8001dde:	2264      	movs	r2, #100	; 0x64
+ 8001dde:	2278      	movs	r2, #120	; 0x78
  8001de0:	635a      	str	r2, [r3, #52]	; 0x34
 									TIM1->CCR2=duty;
  8001de2:	4b29      	ldr	r3, [pc, #164]	; (8001e88 <HAL_GPIO_EXTI_Callback+0xfc>)
- 8001de4:	2264      	movs	r2, #100	; 0x64
+ 8001de4:	2278      	movs	r2, #120	; 0x78
  8001de6:	639a      	str	r2, [r3, #56]	; 0x38
 									TIM1->CCR3=0;
  8001de8:	4b27      	ldr	r3, [pc, #156]	; (8001e88 <HAL_GPIO_EXTI_Callback+0xfc>)
@@ -3194,7 +3194,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
  8001df4:	635a      	str	r2, [r3, #52]	; 0x34
 									TIM1->CCR2=duty;
  8001df6:	4b24      	ldr	r3, [pc, #144]	; (8001e88 <HAL_GPIO_EXTI_Callback+0xfc>)
- 8001df8:	2264      	movs	r2, #100	; 0x64
+ 8001df8:	2278      	movs	r2, #120	; 0x78
  8001dfa:	639a      	str	r2, [r3, #56]	; 0x38
 									TIM1->CCR3=0;
  8001dfc:	4b22      	ldr	r3, [pc, #136]	; (8001e88 <HAL_GPIO_EXTI_Callback+0xfc>)
@@ -3212,11 +3212,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
  8001e08:	635a      	str	r2, [r3, #52]	; 0x34
 									TIM1->CCR2=duty;
  8001e0a:	4b1f      	ldr	r3, [pc, #124]	; (8001e88 <HAL_GPIO_EXTI_Callback+0xfc>)
- 8001e0c:	2264      	movs	r2, #100	; 0x64
+ 8001e0c:	2278      	movs	r2, #120	; 0x78
  8001e0e:	639a      	str	r2, [r3, #56]	; 0x38
 									TIM1->CCR3=duty;
  8001e10:	4b1d      	ldr	r3, [pc, #116]	; (8001e88 <HAL_GPIO_EXTI_Callback+0xfc>)
- 8001e12:	2264      	movs	r2, #100	; 0x64
+ 8001e12:	2278      	movs	r2, #120	; 0x78
  8001e14:	63da      	str	r2, [r3, #60]	; 0x3c
 
 
@@ -3234,7 +3234,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
  8001e22:	639a      	str	r2, [r3, #56]	; 0x38
 							    	TIM1->CCR3=duty;
  8001e24:	4b18      	ldr	r3, [pc, #96]	; (8001e88 <HAL_GPIO_EXTI_Callback+0xfc>)
- 8001e26:	2264      	movs	r2, #100	; 0x64
+ 8001e26:	2278      	movs	r2, #120	; 0x78
  8001e28:	63da      	str	r2, [r3, #60]	; 0x3c
 
 
@@ -3244,7 +3244,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 							    case 6:
 							    	TIM1->CCR1=duty;
  8001e2c:	4b16      	ldr	r3, [pc, #88]	; (8001e88 <HAL_GPIO_EXTI_Callback+0xfc>)
- 8001e2e:	2264      	movs	r2, #100	; 0x64
+ 8001e2e:	2278      	movs	r2, #120	; 0x78
  8001e30:	635a      	str	r2, [r3, #52]	; 0x34
 							    	TIM1->CCR2=0;
  8001e32:	4b15      	ldr	r3, [pc, #84]	; (8001e88 <HAL_GPIO_EXTI_Callback+0xfc>)
@@ -3252,7 +3252,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
  8001e36:	639a      	str	r2, [r3, #56]	; 0x38
 							    	TIM1->CCR3=duty;
  8001e38:	4b13      	ldr	r3, [pc, #76]	; (8001e88 <HAL_GPIO_EXTI_Callback+0xfc>)
- 8001e3a:	2264      	movs	r2, #100	; 0x64
+ 8001e3a:	2278      	movs	r2, #120	; 0x78
  8001e3c:	63da      	str	r2, [r3, #60]	; 0x3c
 
 
@@ -3262,7 +3262,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 							    case 1:
 							    TIM1->CCR1=duty;
  8001e40:	4b11      	ldr	r3, [pc, #68]	; (8001e88 <HAL_GPIO_EXTI_Callback+0xfc>)
- 8001e42:	2264      	movs	r2, #100	; 0x64
+ 8001e42:	2278      	movs	r2, #120	; 0x78
  8001e44:	635a      	str	r2, [r3, #52]	; 0x34
 							    TIM1->CCR2=0;
  8001e46:	4b10      	ldr	r3, [pc, #64]	; (8001e88 <HAL_GPIO_EXTI_Callback+0xfc>)
