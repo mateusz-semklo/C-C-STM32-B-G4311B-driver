@@ -477,7 +477,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if(huart->Instance==USART2)
 	{
-		//HAL_UART_Receive_IT(&huart2, &recive, 1);
+		HAL_UART_Receive_IT(&huart2, &recive, 1);
 
 	}
 }
