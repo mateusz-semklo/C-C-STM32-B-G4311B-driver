@@ -87,6 +87,7 @@ volatile float32_t set_speed, e_speed, speed;
 volatile arm_pid_instance_f32 pid_iq_speed;
 volatile float32_t iq_speed, iq_speed_prev;
 volatile uint32_t capture_tim8_ccr2;
+volatile uint32_t index_speed_loop;
 //////////// SPEED PID /////////////////////////////////////////////////////////
 
 
@@ -195,16 +196,16 @@ void start_up(void)
 			arm_pid_init_f32(&pid_d, 1);
 
 			/////////// inicjalizacja pid_q ////////////////
-			set_q=1;
+			set_q=0.5;
 			pid_q.Kp=4;
 			pid_q.Ki=1;
 			pid_q.Kd=0;
 			arm_pid_init_f32(&pid_q, 1);
 
 			/////////// inicjalizacja pid_speed ////////////////
-			set_speed=3000;
-			pid_iq_speed.Kp=2;
-			pid_iq_speed.Ki=1;
+			set_speed=2200;
+			pid_iq_speed.Kp=5;
+			pid_iq_speed.Ki=5;
 			pid_iq_speed.Kd=0;
 			arm_pid_init_f32(&pid_iq_speed, 1);
 		}
@@ -310,7 +311,6 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	else
 		speed=revolution_per_min/capture_tim8_ccr2;
 
-
 	index_event_adc++;
 	adc_Ia= HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1);
     while((hadc1.Instance->ISR &= (0x1<<5))!=0){}
@@ -353,7 +353,12 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	    	arm_park_f32(Ialpha, Ibeta, &Id, &Iq, pSinVal, pCosVal);
 
 
+
 	    	// pid speed
+	   							index_speed_loop++;
+	   							if(index_speed_loop==1)
+	   							{
+
 	    						e_speed=set_speed-speed;
 	    						iq_speed_prev=pid_iq_speed.state[2];
 	    						iq_speed=arm_pid_f32(&pid_iq_speed, e_speed);
@@ -369,6 +374,9 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	    							pid_iq_speed.state[2]=iq_speed_prev;
 	    							iq_speed=current_limit_min_iq;
 	    						}
+	   							}
+	   							if(index_speed_loop==5)
+	   								index_speed_loop=0;
 
 
 
