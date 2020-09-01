@@ -152,7 +152,7 @@ void start_up(void)
 			HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
 			HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
 			HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
-			HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
+			//HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
 
 
 			HAL_Delay(800);
@@ -184,8 +184,8 @@ void start_up(void)
 			HAL_OPAMP_Start(&hopamp2);
 			HAL_OPAMP_Start(&hopamp3);
 			//////// start ADC 1 2 ///////////////////////////////////
-			//HAL_ADCEx_InjectedStart_IT(&hadc1);
-			//HAL_ADCEx_InjectedStart_IT(&hadc2);
+			HAL_ADCEx_InjectedStart_IT(&hadc1);
+			HAL_ADCEx_InjectedStart_IT(&hadc2);
 
 
 
@@ -219,20 +219,6 @@ void start_up(void)
 void start1(void)
 {
 
-	 if(HAL_OK== ((HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED)) && (HAL_ADCEx_Calibration_Start(&hadc2, ADC_SINGLE_ENDED))) )
-	   {
-		if(HAL_OK== (HAL_OPAMPEx_SelfCalibrateAll(&hopamp1, &hopamp2, &hopamp3)))
-		{
-
-			//////// konfiguracja Timer 1  //////////////////////////
-			TIM1->ARR= TIM1_ARR;
-			TIM1->PSC= TIM1_PSC;
-
-			TIM1->CCR1=(TIM1->ARR/10);
-			TIM1->CCR2=0;
-			TIM1->CCR3=0;
-			TIM1->CCR4=TIM1_CCR4;
-
 			HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 			HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
 			HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
@@ -241,82 +227,14 @@ void start1(void)
 			HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
 			HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
 
-
-			HAL_Delay(500);
-
-			//////// konfiguracja Timer 4 - encoder ///////////////////
-			TIM4->ARR= TIM4_ARR;
-			TIM4->PSC= TIM4_PSC;
-			HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_1);
-			HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_2);
-			//////// konfiguracja Timer 4 - encoder ///////////////////
-
-			HAL_Delay(200);
-
-			TIM1->CCR1=0;
-			TIM1->CCR2=0;
-			TIM1->CCR3=0;
-
-			HAL_Delay(200);
-
-
-			//////// konfiguracja Timer 8  ///////////////////
-			TIM8->ARR= TIM8_ARR;
-			TIM8->PSC= TIM8_PSC;
-			HAL_TIM_IC_Start(&htim8, TIM_CHANNEL_2);
-
-
-
-
-			/////////// parse JSON ///////////////////////////////
-			 cJSON * root = cJSON_Parse((char *)jstring);
-			 cJSON * speed = cJSON_GetObjectItemCaseSensitive(root, "speed");
-			 set_speed =  cJSON_GetNumberValue(speed);
-
-		     cJSON_Delete(speed);
-		     cJSON_Delete(root);
-
-
-
-			/////////// inicjalizacja pid_d ////////////////
-			set_d=0;
-			pid_d.Kp=1;
-			pid_d.Ki=1;
-			pid_d.Kd=0;
-			arm_pid_init_f32(&pid_d, 1);
-
-			/////////// inicjalizacja pid_q ////////////////
-			set_q=0.5;
-			pid_q.Kp=4;
-			pid_q.Ki=1;
-			pid_q.Kd=0;
-			arm_pid_init_f32(&pid_q, 1);
-
-			/////////// inicjalizacja pid_speed ////////////////
-
-			pid_iq_speed.Kp=5;
-			pid_iq_speed.Ki=5;
-			pid_iq_speed.Kd=0;
-			arm_pid_init_f32(&pid_iq_speed, 1);
-		}
-
-
-		//////// start ADC 1 2 ///////////////////////////////////
-		HAL_OPAMP_Start(&hopamp1);
-		HAL_OPAMP_Start(&hopamp2);
-		HAL_OPAMP_Start(&hopamp3);
-		//////// start ADC 1 2 ///////////////////////////////////
-		index_event_adc=0;
-		HAL_ADCEx_InjectedStart_IT(&hadc1);
-		HAL_ADCEx_InjectedStart_IT(&hadc2);
-
-
-	   }
-
 }
 
 void stop(void)
 {
+
+	TIM1->CCR1=0;
+	TIM1->CCR2=0;
+	TIM1->CCR3=0;
 
 	HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
 	HAL_TIMEx_PWMN_Stop(&htim1, TIM_CHANNEL_1);
@@ -325,34 +243,17 @@ void stop(void)
 	HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_3);
 	HAL_TIMEx_PWMN_Stop(&htim1, TIM_CHANNEL_3);
 	HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_4);
-	HAL_TIMEx_PWMN_Stop(&htim1, TIM_CHANNEL_4);
 
-	TIM1->CCR1=0;
-	TIM1->CCR2=0;
-	TIM1->CCR3=0;
-
-	HAL_TIM_Encoder_Stop(&htim4, TIM_CHANNEL_1);
-	HAL_TIM_Encoder_Stop(&htim4, TIM_CHANNEL_2);
-	TIM4->CCR1=0;
-	TIM4->CCR2=0;
-	TIM4->CCR3=0;
-
-	HAL_TIM_IC_Stop(&htim8, TIM_CHANNEL_2);
-	TIM8->CCR1=0;
-	TIM8->CCR2=0;
 
 	arm_pid_reset_f32(&pid_d);
 	arm_pid_reset_f32(&pid_q);
 	arm_pid_reset_f32(&pid_iq_speed);
 
-	index_event_adc=0;
+	arm_pid_init_f32(&pid_d, 1);
+	arm_pid_init_f32(&pid_q, 1);
+	arm_pid_init_f32(&pid_iq_speed, 1);
 
-	HAL_ADCEx_InjectedStop(&hadc1);
-	HAL_ADCEx_InjectedStop(&hadc2);
 
-	HAL_OPAMP_Stop(&hopamp1);
-	HAL_OPAMP_Stop(&hopamp2);
-	HAL_OPAMP_Stop(&hopamp3);
 
 }
 
@@ -610,17 +511,49 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			//if(index_uart==0)
 			//	stop();
 
+
+
 			jstring[index_uart]=recive;
 
 			if(recive=='}')
 			{
+
 				for (int i=(index_uart+1);i<size_uart_tab;i++)
 				{
 					jstring[i]=0;
 				}
 				index_uart=0;
 
-				start1();
+				/////////// parse JSON ///////////////////////////////
+				 cJSON * root = cJSON_Parse((char *)jstring);
+				 cJSON * speed = cJSON_GetObjectItemCaseSensitive(root, "speed");
+				 set_speed =  atoi(cJSON_GetStringValue(speed));
+
+				 cJSON * current = cJSON_GetObjectItemCaseSensitive(root, "current");
+				 set_q =  atoi(cJSON_GetStringValue(current));
+
+				 cJSON * iq_Kp = cJSON_GetObjectItemCaseSensitive(root, "iq_Kp");
+				 pid_q.Kp =  atoi(cJSON_GetStringValue(iq_Kp));
+
+				 cJSON * iq_Ki = cJSON_GetObjectItemCaseSensitive(root, "iq_Ki");
+				 pid_q.Ki =  atoi(cJSON_GetStringValue(iq_Ki));
+
+				 cJSON * id_Kp = cJSON_GetObjectItemCaseSensitive(root, "id_Kp");
+				 pid_d.Kp =  atoi(cJSON_GetStringValue(id_Kp));
+
+				 cJSON * id_Ki = cJSON_GetObjectItemCaseSensitive(root, "id_Ki");
+				 pid_d.Ki =  atoi(cJSON_GetStringValue(id_Ki));
+
+
+
+			     cJSON_Delete(speed);
+			     cJSON_Delete(root);
+			 	for(int i=0;i<size_uart_tab;i++)
+			 	{
+			 		jstring[i]=0;
+			 	}
+
+				//start1();
 			}
 			else
 				index_uart++;
