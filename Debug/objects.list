@@ -1,4 +1,6 @@
 "Core/Src/adc.o"
+"Core/Src/cJSON.o"
+"Core/Src/cJSON_Utils.o"
 "Core/Src/gpio.o"
 "Core/Src/main.o"
 "Core/Src/opamp.o"
