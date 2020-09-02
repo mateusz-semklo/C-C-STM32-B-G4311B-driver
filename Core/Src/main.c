@@ -33,6 +33,8 @@
 #include "arm_math.h"
 #include "math.h"
 #include "cJSON.h"
+#include "stdio.h"
+#include "stdlib.h"
 
 
 /* USER CODE END Includes */
@@ -58,7 +60,7 @@
 
 ////////////??????????????????????????????????/////////////////////////////////////////////////////////
 volatile float32_t t;
-volatile float32_t t1,t2,t3;
+volatile float32_t t1,t2,t3,k;
 volatile uint32_t a,b,c,d,p;
 
 
@@ -248,11 +250,6 @@ void stop(void)
 	arm_pid_reset_f32(&pid_d);
 	arm_pid_reset_f32(&pid_q);
 	arm_pid_reset_f32(&pid_iq_speed);
-
-	arm_pid_init_f32(&pid_d, 1);
-	arm_pid_init_f32(&pid_q, 1);
-	arm_pid_init_f32(&pid_iq_speed, 1);
-
 
 
 }
@@ -512,7 +509,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			//	stop();
 
 
-
+char buffer [30];
 			jstring[index_uart]=recive;
 
 			if(recive=='}')
@@ -530,7 +527,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 				 set_speed =  atoi(cJSON_GetStringValue(speed));
 
 				 cJSON * current = cJSON_GetObjectItemCaseSensitive(root, "current");
-				 set_q =  atoi(cJSON_GetStringValue(current));
+				 sscanf(cJSON_GetStringValue(current),"%f",&set_q);
+
 
 				 cJSON * iq_Kp = cJSON_GetObjectItemCaseSensitive(root, "iq_Kp");
 				 pid_q.Kp =  atoi(cJSON_GetStringValue(iq_Kp));
@@ -538,16 +536,45 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 				 cJSON * iq_Ki = cJSON_GetObjectItemCaseSensitive(root, "iq_Ki");
 				 pid_q.Ki =  atoi(cJSON_GetStringValue(iq_Ki));
 
+				 cJSON * iq_Kd = cJSON_GetObjectItemCaseSensitive(root, "iq_Kd");
+				 pid_q.Kd =  atoi(cJSON_GetStringValue(iq_Kd));
+
 				 cJSON * id_Kp = cJSON_GetObjectItemCaseSensitive(root, "id_Kp");
 				 pid_d.Kp =  atoi(cJSON_GetStringValue(id_Kp));
 
 				 cJSON * id_Ki = cJSON_GetObjectItemCaseSensitive(root, "id_Ki");
 				 pid_d.Ki =  atoi(cJSON_GetStringValue(id_Ki));
 
+				 cJSON * id_Kd = cJSON_GetObjectItemCaseSensitive(root, "id_Kd");
+				 pid_d.Kd =  atoi(cJSON_GetStringValue(id_Kd));
+
+				 cJSON * speed_Kp = cJSON_GetObjectItemCaseSensitive(root, "speed_Kp");
+				 pid_iq_speed.Kp =  atoi(cJSON_GetStringValue(speed_Kp));
+
+				 cJSON * speed_Ki = cJSON_GetObjectItemCaseSensitive(root, "speed_Ki");
+				 pid_iq_speed.Ki =  atoi(cJSON_GetStringValue(speed_Ki));
+
+				 cJSON * speed_Kd = cJSON_GetObjectItemCaseSensitive(root, "speed_Kd");
+				 pid_iq_speed.Kd =  atoi(cJSON_GetStringValue(speed_Kd));
+
+					arm_pid_init_f32(&pid_d, 1);
+					arm_pid_init_f32(&pid_q, 1);
+					arm_pid_init_f32(&pid_iq_speed, 1);
 
 
+				 cJSON_Delete(iq_Kp);
+			     cJSON_Delete(iq_Ki);
+				 cJSON_Delete(id_Kp);
+				 cJSON_Delete(id_Ki);
+				 cJSON_Delete(id_Kd);
+				 cJSON_Delete(iq_Kd);
+			     cJSON_Delete(current);
 			     cJSON_Delete(speed);
+			     cJSON_Delete(speed_Kp);
+			     cJSON_Delete(speed_Ki);
+			     cJSON_Delete(speed_Kd);
 			     cJSON_Delete(root);
+
 			 	for(int i=0;i<size_uart_tab;i++)
 			 	{
 			 		jstring[i]=0;

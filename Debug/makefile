@@ -42,7 +42,7 @@ all: B-G4311B-driver.elf secondary-outputs
 
 # Tool invocations
 B-G4311B-driver.elf: $(OBJS) $(USER_OBJS) C:\Users\Mateusz\STM32CubeIDE\workspace_1.3.0\B-G4311B-driver\STM32G431CBUX_FLASH.ld
-	arm-none-eabi-gcc -o "B-G4311B-driver.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\Mateusz\STM32CubeIDE\workspace_1.3.0\B-G4311B-driver\STM32G431CBUX_FLASH.ld" --specs=nosys.specs -Wl,-Map="B-G4311B-driver.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+	arm-none-eabi-gcc -o "B-G4311B-driver.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\Mateusz\STM32CubeIDE\workspace_1.3.0\B-G4311B-driver\STM32G431CBUX_FLASH.ld" --specs=nosys.specs -Wl,-Map="B-G4311B-driver.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -u _scanf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
