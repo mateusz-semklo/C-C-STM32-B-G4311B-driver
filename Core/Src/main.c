@@ -61,7 +61,7 @@
 ////////////??????????????????????????????????/////////////////////////////////////////////////////////
 volatile float32_t t;
 volatile float32_t t1,t2,t3,k;
-volatile uint32_t a,b,c,d,p,u;
+volatile uint32_t a,b,c,d,p,u,g;
 
 
 //////////// MAIN_COMMON/////////////////////////////////////////////////////////
@@ -83,7 +83,7 @@ volatile arm_pid_instance_f32 pid_d;
 volatile float32_t set_q, eq;
 volatile arm_pid_instance_f32 pid_q;
 
-volatile float32_t current_limit_max_iq;
+volatile float32_t current_limit_max_iq=0.6;
 
 
 //////////// PID /////////////////////////////////////////////////////////
@@ -128,6 +128,7 @@ volatile static uint8_t config;
 volatile uint8_t startstop,settings;
 //////////// USART 2////////////////////////////////////////////////////////
 
+volatile uint8_t PA15;
 
 /* USER CODE END PV */
 
@@ -203,7 +204,7 @@ void start_up(void)
 			arm_pid_init_f32(&pid_d, 1);
 
 			/////////// inicjalizacja pid_q ////////////////
-			set_q=0.5;
+			set_q=0.7;
 			pid_q.Kp=4;
 			pid_q.Ki=1;
 			pid_q.Kd=0;
@@ -353,6 +354,8 @@ void SVPWM(uint8_t sector,float32_t angle_current_rad,float32_t Vref, float32_t 
 
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
+
+
 	capture_tim8_ccr2= TIM8->CCR2;
 	if(capture_tim8_ccr2 <= 0)
 		speed=0;
@@ -476,7 +479,10 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	    	TIM1->CCR1 = sv_S1;
 	    	TIM1->CCR2 = sv_S2;
 	    	TIM1->CCR3 = sv_S3;
+
 	}
+
+
 
 	 HAL_ADCEx_InjectedStart_IT(&hadc1);
 	 HAL_ADCEx_InjectedStart_IT(&hadc2);
@@ -486,10 +492,17 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if(GPIO_Pin==GPIO_PIN_10)
 	{
+		if(config==0)
+		{
+			config=1;
+			start_up();
+		}
+
 		if(start==0)
 		{
 			start=1;
 			start1();
+
 
 		}
 		else
@@ -514,6 +527,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if(huart->Instance==USART2)
 	{
+
 		if(config==0)
 		{
 			config=1;
@@ -584,6 +598,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 
 	     cJSON_Delete(root);
+
+
 
 
 		HAL_UART_Receive_IT(&huart2, jstring ,256);
