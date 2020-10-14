@@ -83,7 +83,7 @@ volatile arm_pid_instance_f32 pid_d;
 volatile float32_t set_q, eq;
 volatile arm_pid_instance_f32 pid_q;
 
-volatile float32_t current_limit_max_iq=0.6;
+volatile float32_t current_limit_max_iq;
 
 
 //////////// PID /////////////////////////////////////////////////////////
