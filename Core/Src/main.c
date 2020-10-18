@@ -89,12 +89,23 @@ volatile float32_t current_limit_max_iq;
 //////////// PID /////////////////////////////////////////////////////////
 
 //////////// SPEED PID /////////////////////////////////////////////////////////
-volatile float32_t set_speed, e_speed, speed;
+volatile float32_t set_speed, e_speed, speed, set_sp;
 volatile arm_pid_instance_f32 pid_iq_speed;
 volatile float32_t iq_speed, iq_speed_prev;
 volatile uint32_t capture_tim8_ccr2;
 volatile uint32_t index_speed_loop;
 //////////// SPEED PID /////////////////////////////////////////////////////////
+
+//////////// ANGLE PID /////////////////////////////////////////////////////////
+
+volatile int32_t set_angle, e_angle, angle_prev,angle;
+volatile arm_pid_instance_f32 pid_angle;
+volatile char allow_angle[5];
+volatile uint32_t index_angle_loop, index_rev;
+volatile float32_t angle_speed;
+//////////// ANGLE PID /////////////////////////////////////////////////////////
+
+
 
 
 //////////// ADC /////////////////////////////////////////////////////////
@@ -168,8 +179,9 @@ void start_up(void)
 			//////// konfiguracja Timer 4 - encoder ///////////////////
 			TIM4->ARR= TIM4_ARR;
 			TIM4->PSC= TIM4_PSC;
-			HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_1);
-			HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_2);
+			HAL_TIM_Base_Start(&htim4);
+			HAL_TIM_Encoder_Start_IT(&htim4, TIM_CHANNEL_1);
+			HAL_TIM_Encoder_Start_IT(&htim4, TIM_CHANNEL_2);
 			//////// konfiguracja Timer 4 - encoder ///////////////////
 
 			HAL_Delay(400);
@@ -181,10 +193,15 @@ void start_up(void)
 			HAL_Delay(200);
 
 
+
 			//////// konfiguracja Timer 8  ///////////////////
 			TIM8->ARR= TIM8_ARR;
 			TIM8->PSC= TIM8_PSC;
 			HAL_TIM_IC_Start(&htim8, TIM_CHANNEL_2);
+
+			//////// konfiguracja Timer 2  ///////////////////
+			TIM2->ARR=0xFFFF;
+			HAL_TIM_Base_Start(&htim2);
 
 
 			//////// start ADC 1 2 ///////////////////////////////////
@@ -216,6 +233,13 @@ void start_up(void)
 			pid_iq_speed.Ki=5;
 			pid_iq_speed.Kd=0;
 			arm_pid_init_f32(&pid_iq_speed, 1);
+
+			/////////// inicjalizacja pid_speed ////////////////
+			set_angle=20000;
+			pid_angle.Kp=5;
+			pid_angle.Ki=5;
+			pid_angle.Kd=0;
+			arm_pid_init_f32(&pid_angle, 1);
 		}
 
 
@@ -260,6 +284,10 @@ void stop(void)
 	arm_pid_reset_f32(&pid_d);
 	arm_pid_reset_f32(&pid_q);
 	arm_pid_reset_f32(&pid_iq_speed);
+	arm_pid_reset_f32(&pid_angle);
+
+	angle=0;
+	TIM2->CNT=0;
 
 
 }
@@ -402,8 +430,57 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 	        arm_clarke_f32(Ia, Ib, &Ialpha, &Ibeta);
 	    	angle_rotor_deg=TIM4->CCR1;
+
+
+
 	    	arm_sin_cos_f32(angle_rotor_deg, &pSinVal, &pCosVal);
 	    	arm_park_f32(Ialpha, Ibeta, &Id, &Iq, pSinVal, pCosVal);
+
+
+	    	// pid angle
+
+	    						if(allow_angle[0]=='y')
+	    						{
+	    							angle=angle_rotor_deg + (TIM2->CNT * 360);
+	    							index_angle_loop++;
+	    							if(index_angle_loop==1)
+	    								{
+
+	    								  e_angle=set_angle-angle;
+	    								  angle_prev=pid_angle.state[2];
+	    								  angle_speed=arm_pid_f32(&pid_angle, e_angle);
+
+	    		    						if(angle_speed>=set_speed)
+	    		    						{
+	    		    							pid_angle.state[2]=angle_prev;
+	    		    							angle_speed=set_speed;
+	    		    						}
+
+	    		    						if(angle_speed<=0)
+	    		    						{
+	    		    							pid_angle.state[2]=angle_prev;
+	    		    							angle_speed=0;
+	    		    						}
+	    		    						set_sp= angle_speed;
+
+
+
+
+	    								}
+
+	    							if(index_angle_loop==10)
+	    								index_angle_loop=0;
+
+	    						}
+	    						else
+	    						{
+	    							index_angle_loop=0;
+	    							set_sp=set_speed;
+	    							angle=0;
+	    							TIM2->CNT=0;
+	    						}
+
+
 
 
 
@@ -412,7 +489,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	   							if(index_speed_loop==1)
 	   							{
 
-	    						e_speed=set_speed-speed;
+	    						e_speed=set_sp-speed;
 	    						iq_speed_prev=pid_iq_speed.state[2];
 	    						iq_speed=arm_pid_f32(&pid_iq_speed, e_speed);
 	    	// saturacja i anty-wind-up
@@ -516,8 +593,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	if(htim->Instance==TIM3)
+	if(htim->Instance==TIM4)
 	{
+		index_rev++;
+
 
 	}
 
@@ -591,18 +670,42 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			 cJSON * speed_Kd = cJSON_GetObjectItemCaseSensitive(root, "speed_Kd");
 			 pid_iq_speed.Kd =  atoi(cJSON_GetStringValue(speed_Kd));
 
+
+
+
+			 cJSON * a_set = cJSON_GetObjectItemCaseSensitive(root, "a_set");
+			 //strcpy((cJSON_GetStringValue(a_set)), allow_angle);
+			 sprintf(allow_angle, "%s",(char *)(cJSON_GetStringValue(a_set)));
+
+			 cJSON * angle = cJSON_GetObjectItemCaseSensitive(root, "angle");
+			 set_angle =  atoi(cJSON_GetStringValue(angle));
+
+
+			 cJSON * a_Kp = cJSON_GetObjectItemCaseSensitive(root, "a_Kp");
+			 pid_angle.Kp =  atoi(cJSON_GetStringValue(a_Kp));
+
+			 cJSON * a_Ki = cJSON_GetObjectItemCaseSensitive(root, "a_Ki");
+			 pid_angle.Ki =  atoi(cJSON_GetStringValue(a_Ki));
+
+			 cJSON * a_Kd = cJSON_GetObjectItemCaseSensitive(root, "a_Kd");
+			 pid_angle.Kd =  atoi(cJSON_GetStringValue(a_Kd));
+
+
+
 			arm_pid_init_f32(&pid_d, 1);
 			arm_pid_init_f32(&pid_q, 1);
 			arm_pid_init_f32(&pid_iq_speed, 1);
-		 }
+			arm_pid_init_f32(&pid_angle, 1);
+
 
 
 	     cJSON_Delete(root);
+		 }
 
 
 
 
-		HAL_UART_Receive_IT(&huart2, jstring ,256);
+		HAL_UART_Receive_IT(&huart2, jstring ,size_uart_tab);
 
 	}
 }
@@ -653,11 +756,11 @@ int main(void)
   MX_OPAMP2_Init();
   MX_OPAMP3_Init();
   MX_TIM8_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
 
-  //HAL_UART_Receive_IT(&huart2, &recive, 1);
-  HAL_UART_Receive_IT(&huart2, jstring ,256);
+  HAL_UART_Receive_IT(&huart2, jstring ,size_uart_tab);
 
   // start_up();
 
