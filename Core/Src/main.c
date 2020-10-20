@@ -59,9 +59,9 @@
 /* USER CODE BEGIN PV */
 
 ////////////??????????????????????????????????/////////////////////////////////////////////////////////
-volatile float32_t t;
-volatile float32_t t1,t2,t3,k;
-volatile uint32_t a,b,c,d,p,u,g;
+
+volatile float32_t t1,t2,t3;
+
 
 
 //////////// MAIN_COMMON/////////////////////////////////////////////////////////
@@ -70,6 +70,8 @@ volatile float32_t angle_current_deg,angle_current_rad, angle_rotor_deg,angle_ro
 volatile float32_t pSinVal,pCosVal;
 volatile float32_t Vref;
 volatile uint8_t start,licznik;
+volatile uint8_t direction;
+volatile int32_t counter_angle;
 
 //////////// MAIN_COMMON/////////////////////////////////////////////////////////
 
@@ -139,7 +141,6 @@ volatile static uint8_t config;
 volatile uint8_t startstop,settings;
 //////////// USART 2////////////////////////////////////////////////////////
 
-volatile uint8_t PA15;
 
 /* USER CODE END PV */
 
@@ -179,7 +180,7 @@ void start_up(void)
 			//////// konfiguracja Timer 4 - encoder ///////////////////
 			TIM4->ARR= TIM4_ARR;
 			TIM4->PSC= TIM4_PSC;
-			HAL_TIM_Base_Start(&htim4);
+			HAL_TIM_Base_Start_IT(&htim4);
 			HAL_TIM_Encoder_Start_IT(&htim4, TIM_CHANNEL_1);
 			HAL_TIM_Encoder_Start_IT(&htim4, TIM_CHANNEL_2);
 			//////// konfiguracja Timer 4 - encoder ///////////////////
@@ -200,8 +201,8 @@ void start_up(void)
 			HAL_TIM_IC_Start(&htim8, TIM_CHANNEL_2);
 
 			//////// konfiguracja Timer 2  ///////////////////
-			TIM2->ARR=0xFFFF;
-			HAL_TIM_Base_Start(&htim2);
+			//TIM2->ARR=0xFFFF;
+			//HAL_TIM_Base_Start(&htim2);
 
 
 			//////// start ADC 1 2 ///////////////////////////////////
@@ -285,10 +286,6 @@ void stop(void)
 	arm_pid_reset_f32(&pid_q);
 	arm_pid_reset_f32(&pid_iq_speed);
 	arm_pid_reset_f32(&pid_angle);
-
-	angle=0;
-	TIM2->CNT=0;
-
 
 }
 
@@ -383,12 +380,14 @@ void SVPWM(uint8_t sector,float32_t angle_current_rad,float32_t Vref, float32_t 
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
 
-
+// obliczanie prędkości wirnika
 	capture_tim8_ccr2= TIM8->CCR2;
-	if(capture_tim8_ccr2 <= 0)
-		speed=0;
-	else
-		speed=revolution_per_min/capture_tim8_ccr2;
+	speed=revolution_per_min/capture_tim8_ccr2;
+
+	if(direction!=0)  // jeżeli
+	speed=-speed;
+
+
 
 
 	adc_Ia= HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1);
@@ -418,7 +417,6 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	}
 	else
 	{
-	 //   sum_currents=(adc_Ia-offset1)+(adc_Ic-offset3)+(adc_Ib-offset2);
 
 	    adc_Ia=(adc_Ia-offset1);
 	    adc_Ib=(adc_Ib-offset2);
@@ -436,12 +434,21 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	    	arm_sin_cos_f32(angle_rotor_deg, &pSinVal, &pCosVal);
 	    	arm_park_f32(Ialpha, Ibeta, &Id, &Iq, pSinVal, pCosVal);
 
+	    	// obliczanie położenia wirnika
+
+	    	if(counter_angle>=0)
+	    		angle=angle_rotor_deg + (counter_angle * 360);
+	    	else
+	    		angle=-angle_rotor_deg + (counter_angle * 360);
+
+
 
 	    	// pid angle
 
 	    						if(allow_angle[0]=='y')
 	    						{
-	    							angle=angle_rotor_deg + (TIM2->CNT * 360);
+
+
 	    							index_angle_loop++;
 	    							if(index_angle_loop==1)
 	    								{
@@ -456,10 +463,10 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	    		    							angle_speed=set_speed;
 	    		    						}
 
-	    		    						if(angle_speed<=0)
+	    		    						if(angle_speed<=(-set_speed))
 	    		    						{
 	    		    							pid_angle.state[2]=angle_prev;
-	    		    							angle_speed=0;
+	    		    							angle_speed=(-set_speed);
 	    		    						}
 	    		    						set_sp= angle_speed;
 
@@ -476,8 +483,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	    						{
 	    							index_angle_loop=0;
 	    							set_sp=set_speed;
-	    							angle=0;
-	    							TIM2->CNT=0;
+
 	    						}
 
 
@@ -499,10 +505,10 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	    							iq_speed=current_limit_max_iq;
 	    						}
 
-	    						if(iq_speed<=current_limit_min_iq)
+	    						if(iq_speed<=(-current_limit_max_iq))
 	    						{
 	    							pid_iq_speed.state[2]=iq_speed_prev;
-	    							iq_speed=current_limit_min_iq;
+	    							iq_speed=(-current_limit_max_iq);
 	    						}
 	   							}
 	   							if(index_speed_loop==5)
@@ -595,7 +601,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance==TIM4)
 	{
-		index_rev++;
+		if(direction==0)
+			counter_angle++;
+		else
+			counter_angle--;
+
 
 
 	}
@@ -770,6 +780,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  direction= (TIM4->CR1 & 0x10); // 0x10 to piąty bit kierunku liczenia enkodera (up/down)
 
     /* USER CODE END WHILE */
 
